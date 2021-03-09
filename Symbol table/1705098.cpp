@@ -1,18 +1,28 @@
 /**Bismillahir Rahmanir Rahimm**/
 
+//#pragma GCC target ("avx2")
+//#pragma GCC optimization ("O3")
+//#pragma GCC optimization ("unroll-loops")
 #include<bits/stdc++.h>
+//#include <ext/pb_ds/assoc_container.hpp>
+//#include <ext/pb_ds/tree_policy.hpp>
+//using namespace __gnu_pbds;
 using namespace std;
 
 #define mp make_pair
 #define pb push_back
 #define ffr(i,a,b) for(int i=a;i<b;i++)
 #define mm(a,b) memset(a,b,sizeof(a))
-#define _(x) {cout << #x << " = " << x << " ";}
+#define _(x) {cout << #x << " = " << x << " ";}
+#define FastIO ios::sync_with_stdio(false); cin.tie(0);cout.tie(0)
+#define IN freopen("input.txt","r+",stdin)
+#define OUT freopen("output.txt","w+",stdout)
+
 
 typedef long long ll;
 typedef long double ld;
 typedef double db;
-typedef pair<int,int> pii;
+typedef pair<string,int> psi;
 typedef pair<ll,ll> pll;
 typedef vector<int> vi;
 typedef vector<ll> vl;
@@ -216,17 +226,164 @@ public:
 
     ~ScopeTable()
     {
+        delete(parentScope);
         ffr(i,0,no_of_buckets)
         {
             delete (sc_table[i]);
         }
-        delete(parentScope);
     }
+
+};
+
+class SymbolTable
+{
+    stack<ScopeTable*>Scopes;
+    ScopeTable * current;
+    int n;
+    string current_id;
+    bool del_recent;
+    string del_recent_scope;
+public:
+    SymbolTable(int num){
+        n = num;
+        del_recent = false;
+        Enter_Scope(num);///overloaded version just to create the first scopeTable
+    }
+
+    bool get_del_recent(){
+        return del_recent;
+    }
+    void set_del_recent(bool b){
+        del_recent = b;
+    }
+    void set_current_id(string s){
+        current_id = s;
+    }
+    void set_del_recent_scope(string s){
+        del_recent_scope = s;
+    }
+
+    psi get_last_part(string str){
+        string s="";
+        int n = str.size();
+        int i = n-1;
+        char ch='.';
+        while(str[i]!= ch){
+            s = s + str[i];
+            i--;
+        }
+        reverse(s.begin(), s.end());
+        return psi(s , i+1);
+    }
+    int toint(string str){
+        stringstream geek(str); 
+        int x = 0; 
+        geek >> x; 
+        return x;
+    }
+    ///3 args : replace str(last part) from s with another string.idx is start index of str
+    string replace_last_part(string s , int idx , string str){   
+        int len = str.size();
+        int num = toint(str) + 1;
+        string sr = to_string(num);
+        string tmp = s;
+        tmp.replace(idx , len , sr);
+        return tmp;
+    }
+    string get_new_id(){
+        int len = current_id.size();
+        if(del_recent){   ///if immediate prev operation was a delete from symboltable
+            psi p = get_last_part(del_recent_scope);
+            string str = p.first; ///last part
+            int idx = p.second;///start idx of last part
+            string s = replace_last_part(del_recent_scope , idx , str);
+            return s;
+
+        }
+        else{   ///if immediate prev operation was a insert in symboltable
+            /*if(current_id=="1"){
+                return current_id + ".1";
+            }
+            else{
+                psi p = get_last_part(current_id);
+                string str = p.first; ///last part
+                int idx = p.second;///start idx of last part
+                //cout<<current_id<<"-"<<idx<<str<<endl;
+                string s = replace_last_part(current_id , idx , str);
+                return s;
+            }*/
+            return current_id + ".1";
+        }
+    }
+
+    /// Create a new ScopeTable and make it current one. Also
+    ///make the previous current table as its parentScopeTable
+    void Enter_Scope(){
+        current_id = get_new_id();
+        ScopeTable *new_scopetable;
+        if(!Scopes.empty()){
+            new_scopetable = new ScopeTable(n , current_id  , Scopes.top());
+            cout<<" New ScopeTable with id "<<current_id<<" created"<<endl;
+        }
+        else{
+            new_scopetable = new ScopeTable(n, current_id , NULL);
+        }
+        Scopes.push(new_scopetable);
+        current = new_scopetable; 
+    }
+
+    void Enter_Scope(int num){
+        current_id = "1";
+        ScopeTable *new_scopetable;
+        if(!Scopes.empty()){
+            new_scopetable = new ScopeTable(num , current_id  , Scopes.top());
+            //cout<<" New ScopeTable with id "<<current_id<<" created"<<endl;
+        }
+        else{
+            new_scopetable = new ScopeTable(num, current_id , NULL);
+        }
+        Scopes.push(new_scopetable);
+        current = new_scopetable; 
+    }
+
+    ///Remove the current ScopeTable
+    void Exit_Scope(){
+        del_recent = true;
+        del_recent_scope = Scopes.top()->get_id();
+        Scopes.pop();
+        cout<<"ScopeTable with id "<<current_id<<" removed"<<endl;
+        current=Scopes.top();
+        current_id = current->get_id();
+    }
+
+    void printcurrent()
+    {
+        return current->Print();
+    }
+
+    void printall()
+    {
+        ScopeTable *temp=current;
+        while(temp)
+        {
+            temp->Print();
+            temp=temp->get_parent();
+        }
+    }
+
+
+
+    ~SymbolTable(){
+        delete current;
+    }
+
 
 };
 
 
 int main(){
+    freopen("input.txt", "r", stdin);
+    /*
     ScopeTable x(7);
     cout<<x.hash("==")<<endl;
     x.Insert("ab" , "cd");
@@ -239,4 +396,19 @@ int main(){
     x.Print();
     x.Delete("ab");
     x.Print();
+
+    cout<<s.get_new_id()<<endl;
+    s.set_current_id("1.1.1");
+    cout<<s.get_new_id()<<endl;
+    s.set_current_id("1.1.3.4");
+    cout<<s.get_new_id()<<endl;
+    //s.set_del_recent(true);
+    s.set_del_recent_scope("1.3.4");cout<<s.get_new_id()<<endl;
+    */
+    SymbolTable s(7);
+    s.Enter_Scope();
+    //s.Enter_Scope();
+    s.printall();
+    //s.Exit_Scope();
+    //s.printall();
 }
