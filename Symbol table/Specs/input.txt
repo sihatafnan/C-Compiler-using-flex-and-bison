@@ -1,41 +1,33 @@
-7
+2
 I a a
+I c c
+I e e
+I g g
+P C
+D c
+I i i
+P C
 S
-I h h
-S
-I o o
+I a a
+I b b
+I c c
+I d d
+I e e
 P A
-L o
+D a
+P A
 L a
 E
 S
-I foo FUNCTION
+I g g
+I e e
+L e
+D e
+L e
+P A
+D e
 E
-S
-I i VAR
+D e
 P A
-L foo
-L j
-E
-E
-S
-I 5 NUMBER
-P A
-D j
-D i
-P A
-S
-E
-S
-I <= RELOP
-I == RELOP
-P A
-I <= RELOP
-I foo FUNCTION
-D ==
-P A
-E
-I t t
-I k k
-P C
-P A
+T
+

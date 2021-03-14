@@ -1,0 +1,38 @@
+3
+S
+I a a
+I d a
+I g a
+I j a
+I m a
+P C
+S
+I a a
+I d a
+I g a
+I j a
+I m a
+D j
+P C
+L j
+L g
+D d
+P A
+D g
+P C
+L d
+D a
+P A
+D m
+P C
+E
+D m
+P C
+D a
+P C
+D g
+P C
+D d
+P C
+D j
+P C

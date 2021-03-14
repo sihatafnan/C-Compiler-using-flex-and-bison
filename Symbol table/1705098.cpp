@@ -76,7 +76,7 @@ public:
     }
     ///destructor
     ~SymbolInfo(){
-        delete next;
+        
     }
 
 };
@@ -230,7 +230,6 @@ public:
     
     ~ScopeTable()
     {
-        delete(parentScope);
         ffr(i,0,no_of_buckets)
         {
             delete (sc_table[i]);
@@ -409,20 +408,14 @@ public:
         }
     }
 
-    ~SymbolTable(){
-        delete current;
-        ScopeTable *x = Scopes.top();
-        ScopeTable *tmp = x;
-        while(!x)
-        {
-            delete x;
-            tmp = tmp->get_parent();
-            x = tmp;
-        }
-        
+    void clear_recursively(ScopeTable* p){
+        if(p==NULL)return;
+        clear_recursively(p->get_parent());
+        delete p;
     }
-
-
+    ~SymbolTable(){
+       clear_recursively(current);
+    }
 };
 
 
@@ -490,21 +483,3 @@ int main(){
     }      
 }
 
-
-    /*
-    s.Insert("a" , "a");
-    s.Enter_Scope();
-    s.Insert("h" , "h");
-    s.Enter_Scope();
-    s.Insert("o" , "o");
-    s.printall();
-    s.Lookup("o");
-    s.Lookup("p");
-    s.Exit_Scope();
-    s.Enter_Scope();
-    
-    s.Insert("foo" , "function");
-    s.Exit_Scope();
-    s.Enter_Scope();
-    s.Insert("i" , "var");s.Remove("i");s.printall();
-*/
