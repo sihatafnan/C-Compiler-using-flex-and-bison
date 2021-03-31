@@ -1,0 +1,86 @@
+Inserted in ScopeTable# 1 at position 3, 0
+ScopeTable # 1
+0 --> 
+1 --> 
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+Inserted in ScopeTable# 1 at position 0, 0
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> 
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+Inserted in ScopeTable# 1 at position 1, 0
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+Inserted in ScopeTable# 1 at position 1, 1
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >< 9 : CONST_INT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >< 9 : CONST_INT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >< 9 : CONST_INT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> 
+
+Inserted in ScopeTable# 1 at position 6, 0
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >< 9 : CONST_INT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> < 10 : CONST_INT >
+
+ScopeTable # 1
+0 --> < 'h' : CONST_CHAR >
+1 --> < 45E3 : CONST_FLOAT >< 9 : CONST_INT >
+2 --> 
+3 --> < 23 : CONST_INT >
+4 --> 
+5 --> 
+6 --> < 10 : CONST_INT >
+

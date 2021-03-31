@@ -1,0 +1,9 @@
+23
+'h'
+45E3
+{a=a+9};
+c = [c] / 10;
+
+/** Another multiple
+line Comment */
+// agaiin single/comment
