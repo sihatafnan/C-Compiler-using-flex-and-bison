@@ -1,5 +1,7 @@
 %option noyywrap
 
+%x fnd_multiline_comment
+
 %{
 #include<stdio.h>
 #include<stdlib.h>
@@ -22,6 +24,49 @@ void newlines_in_comment(string str){
         if(str[i]=='\n')line++;
     }
 }
+
+pair<string,int> manipulate_string(string s){
+	int tmp_line = line;
+	string x;
+	for(int i=1;i<s.size()-1;i++){
+		if(s[i]=='\n')line++;
+		if(s[i]=='\\' and s[i+1]=='\n') 
+		continue;
+		int ok=0;
+		if(s[i]=='\\' and s[i+1]=='n') 
+			x.push_back('\n');
+		else if(s[i]=='\\' and s[i+1]=='t') 
+			x.push_back('\t');
+		else if(s[i]=='\\' and s[i+1]=='\\') 
+			x.push_back('\\');
+		else if(s[i]=='\\' and s[i+1]=='\'') 
+			x.push_back('\'');
+		else if(s[i]=='\\' and s[i+1]=='\"') 
+			x.push_back('\"');
+		else if(s[i]=='\\' and s[i+1]=='a') 
+			x.push_back('\a');
+		else if(s[i]=='\\' and s[i+1]=='f') 
+			x.push_back('\f');
+		else if(s[i]=='\\' and s[i+1]=='r') 
+			x.push_back('\r');
+		else if(s[i]=='\\' and s[i+1]=='v') 
+			x.push_back('\v');
+		else if(s[i]=='\\' and s[i+1]=='b') 
+			x.push_back('\b');
+		else if(s[i]=='\\' and s[i+1]=='\0') 
+			x.push_back('\0');
+		else if(s[i]=='\n' ) 
+			continue;
+		else{
+			ok=1;
+			x.push_back(s[i]);
+		}
+		if(ok==0) i++;
+	}
+	
+	return mp(x , tmp_line); /* returns modified string and starting line cnt*/
+} 
+
 
 %}
 /*keywords*/
@@ -72,6 +117,8 @@ MULTI_LINE_COMMENT "/*"([^*]|("*"[^/]))*"*/"|("//"(([\\]+([\n]))|[^\n]*)*)
 
 /*FLOAT_LITERAL {DIGIT}*\.{DIGIT}+([E][-+]?{DIGIT}+)? | {DIGIT}+([E][-+]?{DIGIT}+)?*/
 
+/* const literals */
+
 EXPONENTIAL ([Ee][-+]?{DIGITS})
 FLOAT_VAR_ONE ({DIGITS}\.{DIGITS})({EXPONENTIAL})?
 FLOAT_VAR_TWO (\.{DIGITS})({EXPONENTIAL})?
@@ -81,48 +128,122 @@ FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE})
 INT_LITERAL {DIGITS}
 
 NORMAL_CHAR '([ -~]{-}['\\])'
-SPECIAL_CHAR '(\\[nt\\afrbv0\"])'
+SPECIAL_CHAR '(\\['nt\\afrbv0\"])'
 CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
 
 IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 
+STRING \"([^\n]|(\\[\n])|(\"))*\" 	
+
+/* errors */
+
+/*Too many decimal point error for character sequence like 1.2.345*/
+TMD1 ({DIGITS}\.{DIGITS})
+TMD2 (\.{DIGITS})
+TOO_MANY_DECIMAL_POINT_ERROR ({TMD1}|{TMD2})({TMD1}|{TMD2})*
+
+/* ill formed number ex- 11E3.5*/
+TYPE1 ({DIGITS}\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
+TYPE2 (\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
+TYPE3 ({DIGITS})([Ee][-+]?)({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
+TYPE4 ({DIGITS}(\.))([Ee][-+]?)(.*)([Ee][-+]?)?
+TYPE5 ([Ee][-+]?)?({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
+TYPE6 ({DIGITS}(\.))
+ILL_FORMED_NUM {TYPE1}|{TYPE2}|{TYPE3}|{TYPE4}|{TYPE5}|{TYPE6}
+
+/*Invalid Suffix on numeric constant or invalid prefix on identifier for character sequence
+like 12abcd*/
+INVALID_SUFFIX_PREFIX [0-9]*[A-Za-z_]*
+
+
+
+/*Unfinished character such as ‘a , ‘\n or ‘\’ */
+NMCH_FOR_ERR ([ -~]{-}['\\])
+SPCH_FOR_ERR (\\[nt\\afrbv0\"])
+
+UNFINISHED_CHAR_ERROR_ONE '({NMCH_FOR_ERR}|{SPCH_FOR_ERR})*
+FORWARD_SLASH '[\\]'
+
+UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{FORWARD_SLASH}
+
+
+
+
+/*Multi character constant error for character sequence like ‘ab’ */
+NMCH ([ -~])      
+SPCH (\\[nt\\afrbv0\"])
+MULTI_CHAR_ERROR '(({NMCH}|{SPCH})+)'
+
+/*unfinished comment*/
+STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH \*[^\/]
+ANYTHING_EXCEPT_STAR [^*]
+UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*
+
+/*unfinished string*/
+
+/*unrecognized char*/
+UNRECOGNIZED_CHAR_ERROR ([`@!])
 
 /* Rules Section*/
 %%
+
 {WHITESPACE}    {}
 
 {NEWLINE}       {line++; }
 
 
 {SINGLE_LINE_COMMENT} {
+				int tmp = line;
                 newlines_in_comment(yytext);     
-                fprintf(logfile,"Line no. %d: Token <SINGLE_LINE_COMMENT> Lexeme %s found\n\n",line,yytext);      
+                fprintf(logfile,"Line no. %d: Token <COMMENT> Lexeme %s found\n\n",tmp,yytext);      
 }
 
+
 {MULTI_LINE_COMMENT} {
+				int tmp = line;
                 newlines_in_comment(yytext); 
-                fprintf(logfile,"ending Line no. %d: Token <MULTI_LINE_COMMENT> Lexeme %s found\n\n",line,yytext);          
+                fprintf(logfile,"Line no. %d: Token <COMMENT> Lexeme %s found\n\n",tmp,yytext);          
 }
 
 {INT_LITERAL} {
 	fprintf(tokenfile,"<CONST_INT,%s>",yytext);
 	fprintf(logfile,"Line no. %d: Token <CONST_INT> Lexeme %s found\n\n",line,yytext);
-	st.Insert(yytext , "CONST_INT");
-    st.printcurrent();
+	bool did = st.Insert(yytext , "CONST_INT",logfile);
+    if(did)st.printall(logfile);
 }
 
 {FLOAT_LITERAL} {
 	fprintf(tokenfile,"<CONST_FLOAT,%s>",yytext);
 	fprintf(logfile,"Line no. %d: Token <CONST_FLOAT> Lexeme %s found\n\n",line,yytext);
-	st.Insert(yytext , "CONST_FLOAT");
+	bool did = st.Insert(yytext , "CONST_FLOAT",logfile);
+	if(did)st.printall(logfile);
 }
 
 
 {CHAR_LITERAL} {
-    fprintf(tokenfile,"<CONST_CHAR,%s>",yytext);
-	fprintf(logfile,"Line no. %d: Token <CONST_CHAR> Lexeme %s found\n\n",line,yytext);
-	st.Insert(yytext , "CONST_CHAR");
-    st.printcurrent();
+	string str = yytext;
+    if(str.length()==3){
+		fprintf(logfile,"Line no. %d: Token <CONST_CHAR> Lexeme %s found --> <CHAR_CONST,%c>\n",line,yytext,str[1]);
+		fprintf(tokenfile,"<CONST_CHAR,%c>",str[1]);
+	}
+	else {
+		
+		char ch;
+		if(str[2]=='n')ch='\n';
+		else if(str[2]=='t')ch='\t';
+		else if(str[2]=='a')ch='\a';
+		else if(str[2]=='f')ch='\f';
+		else if(str[2]=='r')ch='\r';
+		else if(str[2]=='b')ch='\b';
+		else if(str[2]=='v')ch='\v';
+		else if(str[2]=='0')ch='\0';
+		else if(str[2]=='\'')ch='\'';
+		else if(str[2]=='\"')ch='\"';
+		fprintf(tokenfile,"<CONST_CHAR,%c>",ch);
+		fprintf(logfile,"Line no. %d: Token <CONST_CHAR> Lexeme %s found --> <CHAR_CONST,%c>\n",line,yytext,ch);
+	}
+	bool did = st.Insert(yytext , "CONST_CHAR",logfile);
+    if(did)st.printall(logfile);
 }
 
 {BREAK} {
@@ -259,11 +380,13 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 {LCURL} {
 	fprintf(tokenfile,"<LCURL,%s>",yytext);
 	fprintf(logfile,"Line no. %d: Token <LCURL> Lexeme %s found\n\n",line,yytext);
+	st.Enter_Scope();
 }
 
 {RCURL} {
 	fprintf(tokenfile,"<RCURL,%s>",yytext);
 	fprintf(logfile,"Line no. %d: Token <RCURL> Lexeme %s found\n\n",line,yytext);
+	st.Exit_Scope();
 }
 
 {LTHIRD} {
@@ -289,11 +412,66 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 {IDENTIFIER} {
 	fprintf(tokenfile,"<ID,%s>",yytext);
 	fprintf(logfile,"Line no. %d: Token <ID> Lexeme %s found\n\n",line,yytext);
-	st.printall();
+	bool did = st.Insert(yytext , "ID" , logfile);
+	if(did)st.printall(logfile);
 }
 
-<<EOF>> {fprintf(logfile , "Total Line Number: %d\n",line); st.printall();return 0;}
+{STRING} {
+	pair<string , int> processed = manipulate_string(yytext);
+	fprintf(logfile,"Line no. %d: Token <STRING> Lexeme %s found --> <String , %s>\n",processed.second,yytext,processed.first.c_str());
+	fprintf(tokenfile,"<STRING,%s>",processed.first.c_str());
+	
+}
 
+{TOO_MANY_DECIMAL_POINT_ERROR} {
+	error_cnt++;
+	fprintf(logfile,"Error at line. %d: Too many decimal points %s\n\n",line,yytext);
+}
+
+{ILL_FORMED_NUM} {
+	error_cnt++;
+	fprintf(logfile,"Error at line. %d: Ill formed numer: %s\n\n",line,yytext);
+}
+
+{INVALID_SUFFIX_PREFIX} {
+	error_cnt++;
+	fprintf(logfile,"Error at line. %d: Invalid prefix on ID or invalid suffix on Number %s\n\n",line,yytext);
+}
+
+
+
+'' {
+	error_cnt++;
+	fprintf(logfile,"Error at line. %d: Empty character constant error %s\n\n",line,yytext);
+}
+
+{UNFINISHED_CHAR_ERROR} {
+	error_cnt++;
+	fprintf(logfile,"Error at line. %d: Unterminated character %s\n\n",line,yytext);
+}
+
+{MULTI_CHAR_ERROR} {
+	error_cnt++;
+	fprintf(logfile,"Error at line. %d: Multi character constant error %s\n\n",line,yytext);
+}
+
+"/*"([^*]|("*"[^/]))*[^"*/"] {
+	error_cnt++;
+	int tmp = line;
+    newlines_in_comment(yytext); 
+	fprintf(logfile,"Error at line. %d: Unterminated comment %s\n\n",tmp,yytext);
+}
+
+\"([^\"\n]|(\\[\n]))* {
+	error_cnt++;
+	int tmp = line;
+	pair<string , int> p = manipulate_string(yytext);
+	fprintf(logfile,"Error at line. %d: Unterminated string %s\n\n",tmp,yytext);
+}
+
+`|@|!|. {
+	fprintf(logfile,"Error at line. %d: Unrecgnized character %s\n\n",line,yytext);
+}
 %%
 
 int main(int argc,char *argv[]){

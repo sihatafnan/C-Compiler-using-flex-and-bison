@@ -17,7 +17,7 @@ using namespace std;
 #define FastIO ios::sync_with_stdio(false); cin.tie(0);cout.tie(0)
 
 // #define logfile freopen("1705098_log.txt","w+",stdout)
-FILE *logfile_ = fopen("1705098_log.txt","w");
+//FILE *logfile_ = fopen("1705098_log.txt","w");
 
 
 
@@ -139,13 +139,13 @@ public:
         return tmp;
     }
 
-    bool Insert(string nm , string tp){
+    bool Insert(string nm , string tp , FILE* logfile_){
         pr_condition = 0;
         SymbolInfo *fnd = Lookup(nm);
         //char* nms = nm;
         if(fnd != NULL ){
-            cout<<"<"<<nm<<","<<fnd->get_type()<<">"<<" already exists in current ScopeTable"<<endl;
-            fprintf(logfile_ , "<%s,%s> already exists in current ScopeTable\n" , nm.c_str() , fnd->get_type().c_str());
+            //cout<<"<"<<nm<<","<<fnd->get_type()<<">"<<" already exists in current ScopeTable"<<endl;
+            fprintf(logfile_ , "%s already exists in current ScopeTable\n" , nm.c_str() );
             return false;
         }
         else{
@@ -154,7 +154,7 @@ public:
             if(sc_table[hash_val]==NULL){
                 sc_table[hash_val] = new_symbol;
                 //cout<<"Inserted in ScopeTable# "<<unique_id<<" at position "<<hash_val<<", 0"<<endl;
-                fprintf(logfile_ , "Inserted in ScopeTable# %s at position %d, 0\n",unique_id.c_str() , hash_val);
+                //fprintf(logfile_ , "Inserted in ScopeTable# %s at position %d, 0\n",unique_id.c_str() , hash_val);
                 return true;
             }
             else{
@@ -166,8 +166,8 @@ public:
                     pos++;
                 }
                 tmp->setnext(new_symbol);
-                cout<<"Inserted in ScopeTable# "<<unique_id<<" at position "<<hash_val<<", "<<pos+1<<endl;
-                fprintf(logfile_ , "Inserted in ScopeTable# %s at position %d, %d\n",unique_id.c_str() , hash_val , pos+1);
+                //cout<<"Inserted in ScopeTable# "<<unique_id<<" at position "<<hash_val<<", "<<pos+1<<endl;
+                //fprintf(logfile_ , "Inserted in ScopeTable# %s at position %d, %d\n",unique_id.c_str() , hash_val , pos+1);
                 return true;
             }
 
@@ -175,13 +175,15 @@ public:
         
     }
 
-    void Print(){
+    void Print(FILE* logfile_){
         //cout<<"ScopeTable # "<<unique_id<<endl;
         fprintf(logfile_ , "ScopeTable # %s\n" , unique_id.c_str());
         ffr(i,0,no_of_buckets){
             //cout<<i<<" -->  ";
-            fprintf(logfile_ , "%d --> ",i);
+            
             SymbolInfo *tmp = sc_table[i];
+            if(tmp==NULL)continue;
+            fprintf(logfile_ , "%d --> ",i);
             while(tmp != NULL){
                 //cout<<"< "<<tmp->get_name()<<" : "<<tmp->get_type()<<" > ";
                 fprintf(logfile_ , "< %s : %s >" , tmp->get_name().c_str() , tmp->get_type().c_str());
@@ -337,7 +339,7 @@ public:
         ScopeTable *new_scopetable;
         if(!Scopes.empty()){
             new_scopetable = new ScopeTable(n , current_id  , Scopes.top());
-            cout<<"New ScopeTable with id "<<current_id<<" created"<<endl;
+            //cout<<"New ScopeTable with id "<<current_id<<" created"<<endl;
         }
         else{
             new_scopetable = new ScopeTable(n, current_id , NULL);
@@ -366,15 +368,15 @@ public:
         del_recent = true;
         del_recent_scope = Scopes.top()->get_id();
         Scopes.pop();
-        cout<<"ScopeTable with id "<<current_id<<" removed"<<endl;
+        //cout<<"ScopeTable with id "<<current_id<<" removed"<<endl;
         current=Scopes.top();
         current_id = current->get_id();
     }
 
     ///Insert a symbol in current ScopeTable. Return true for
     ///successful insertion and false otherwise
-    bool Insert(string name, string type){
-		return current->Insert(name, type);
+    bool Insert(string name, string type,FILE* logfile_){
+		return current->Insert(name, type,logfile_);
 	}
 
     ///Remove a symbol from current ScopeTable. Return true for
@@ -403,18 +405,18 @@ public:
     }
 
     ///Print the current ScopeTable
-    void printcurrent()
+    void printcurrent(FILE* logfile_)
     {
-        return current->Print();
+        return current->Print(logfile_);
     }
 
     ///Print all the ScopeTables currently in the SymbolTable
-    void printall()
+    void printall(FILE* logfile_)
     {
         ScopeTable *temp=current;
         while(temp)
         {
-            temp->Print();
+            temp->Print(logfile_);
             temp=temp->get_parent();
         }
     }
