@@ -1,0 +1,6 @@
+int main(){
+	char c = '\r';
+	char str[50] = "next line";
+	
+	return 0;
+}	

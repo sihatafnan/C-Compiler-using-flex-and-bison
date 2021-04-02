@@ -1,0 +1,1 @@
+<INT> <ID, main> <LPAREN, (> <RPAREN, )> <LCURL, {> <CHAR> <ID, c> <ASSIGNOP, => <CHAR_CONST, > <SEMICOLON, ;> <CHAR> <ID, str> <LTHIRD, [> <CONST_INT, 50> <RTHIRD, ]> <ASSIGNOP, => <STRING, "next line"> <SEMICOLON, ;> <RETURN> <CONST_INT, 0> <SEMICOLON, ;> <RCURL, }> 

@@ -1,7 +1,5 @@
 %option noyywrap
 
-%x fnd_multiline_comment
-
 %{
 #include<stdio.h>
 #include<stdlib.h>
@@ -86,6 +84,7 @@ RETURN "return"
 SWITCH "switch"
 WHILE "while"
 VOID "void"
+
 /*operators*/
 ADDOP [+-]
 MULOP [*/%]
@@ -110,12 +109,9 @@ LETTER [a-zA-Z]
 NEWLINE [\n]
 WHITESPACE [ \t\v]+
 
-/* need to be modified*/
 SINGLE_LINE_COMMENT "//"(.*)(\n)
 
 MULTI_LINE_COMMENT "/*"([^*]|("*"[^/]))*"*/"|("//"(([\\]+([\n]))|[^\n]*)*)
-
-/*FLOAT_LITERAL {DIGIT}*\.{DIGIT}+([E][-+]?{DIGIT}+)? | {DIGIT}+([E][-+]?{DIGIT}+)?*/
 
 /* const literals */
 
@@ -156,7 +152,6 @@ like 12abcd*/
 INVALID_SUFFIX_PREFIX [0-9]*[A-Za-z_]*
 
 
-
 /*Unfinished character such as ‘a , ‘\n or ‘\’ */
 NMCH_FOR_ERR ([ -~]{-}['\\])
 SPCH_FOR_ERR (\\[nt\\afrbv0\"])
@@ -165,8 +160,6 @@ UNFINISHED_CHAR_ERROR_ONE '({NMCH_FOR_ERR}|{SPCH_FOR_ERR})*
 FORWARD_SLASH '[\\]'
 
 UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{FORWARD_SLASH}
-
-
 
 
 /*Multi character constant error for character sequence like ‘ab’ */
@@ -179,10 +172,6 @@ STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH \*[^\/]
 ANYTHING_EXCEPT_STAR [^*]
 UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*
 
-/*unfinished string*/
-
-/*unrecognized char*/
-UNRECOGNIZED_CHAR_ERROR ([`@!])
 
 /* Rules Section*/
 %%
@@ -206,14 +195,14 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 }
 
 {INT_LITERAL} {
-	fprintf(tokenfile,"<CONST_INT,%s>",yytext);
+	fprintf(tokenfile,"<CONST_INT,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <CONST_INT> Lexeme %s found\n\n",line,yytext);
 	bool did = st.Insert(yytext , "CONST_INT",logfile);
     if(did)st.printall(logfile);
 }
 
 {FLOAT_LITERAL} {
-	fprintf(tokenfile,"<CONST_FLOAT,%s>",yytext);
+	fprintf(tokenfile,"<CONST_FLOAT,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <CONST_FLOAT> Lexeme %s found\n\n",line,yytext);
 	bool did = st.Insert(yytext , "CONST_FLOAT",logfile);
 	if(did)st.printall(logfile);
@@ -224,7 +213,7 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 	string str = yytext;
     if(str.length()==3){
 		fprintf(logfile,"Line no. %d: Token <CONST_CHAR> Lexeme %s found --> <CHAR_CONST,%c>\n",line,yytext,str[1]);
-		fprintf(tokenfile,"<CONST_CHAR,%c>",str[1]);
+		fprintf(tokenfile,"<CONST_CHAR,%c> ",str[1]);
 	}
 	else {
 		
@@ -239,7 +228,7 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 		else if(str[2]=='0')ch='\0';
 		else if(str[2]=='\'')ch='\'';
 		else if(str[2]=='\"')ch='\"';
-		fprintf(tokenfile,"<CONST_CHAR,%c>",ch);
+		fprintf(tokenfile,"<CONST_CHAR,%c> ",ch);
 		fprintf(logfile,"Line no. %d: Token <CONST_CHAR> Lexeme %s found --> <CHAR_CONST,%c>\n",line,yytext,ch);
 	}
 	bool did = st.Insert(yytext , "CONST_CHAR",logfile);
@@ -247,170 +236,170 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 }
 
 {BREAK} {
-	fprintf(tokenfile,"<BREAK>");
+	fprintf(tokenfile,"<BREAK> ");
 	fprintf(logfile,"Line no. %d: Token <BREAK> Lexeme %s found\n\n",line,yytext);
 }
 
 {CASE} {
-	fprintf(tokenfile,"<CASE>");
+	fprintf(tokenfile,"<CASE> ");
 	fprintf(logfile,"Line no. %d: Token <CASE> Lexeme %s found\n\n",line,yytext);
 }
 
 {CHAR} {
-	fprintf(tokenfile,"<CHAR>");
+	fprintf(tokenfile,"<CHAR> ");
 	fprintf(logfile,"Line no. %d: Token <CHAR> Lexeme %s found\n\n",line,yytext);
 }
 
 {CONTINUE} {
-	fprintf(tokenfile,"<CONTINUE>");
+	fprintf(tokenfile,"<CONTINUE> ");
 	fprintf(logfile,"Line no. %d: Token <CONTINUE> Lexeme %s found\n\n",line,yytext);
 }
 
 {DEFAULT} {
-	fprintf(tokenfile,"<DEFAULT>");
+	fprintf(tokenfile,"<DEFAULT> ");
 	fprintf(logfile,"Line no. %d: Token <DEFAULT> Lexeme %s found\n\n",line,yytext);
 }
 
 {DO} {
-	fprintf(tokenfile,"<DO>");
+	fprintf(tokenfile,"<DO> ");
 	fprintf(logfile,"Line no. %d: Token <DO> Lexeme %s found\n\n",line,yytext);
 }
 
 {DOUBLE} {
-	fprintf(tokenfile,"<DOUBLE>");
+	fprintf(tokenfile,"<DOUBLE> ");
 	fprintf(logfile,"Line no. %d: Token <DOUBLE> Lexeme %s found\n\n",line,yytext);
 }
 
 {ELSE} {
-	fprintf(tokenfile,"<ELSE>");
+	fprintf(tokenfile,"<ELSE> ");
 	fprintf(logfile,"Line no. %d: Token <ELSE> Lexeme %s found\n\n",line,yytext);
 }
 
 {FLOAT} {
-	fprintf(tokenfile,"<FLOAT>");
+	fprintf(tokenfile,"<FLOAT> ");
 	fprintf(logfile,"Line no. %d: Token <FLOAT> Lexeme %s found\n\n",line,yytext);
 }
 
 {FOR} {
-	fprintf(tokenfile,"<FOR>");
+	fprintf(tokenfile,"<FOR> ");
 	fprintf(logfile,"Line no. %d: Token <FOR> Lexeme %s found\n\n",line,yytext);
 }
 
 {IF} {
-	fprintf(tokenfile,"<IF>");
+	fprintf(tokenfile,"<IF> ");
 	fprintf(logfile,"Line no. %d: Token <IF> Lexeme %s found\n\n",line,yytext);
 }
 
 {INT} {
-	fprintf(tokenfile,"<INT>");
+	fprintf(tokenfile,"<INT> ");
 	fprintf(logfile,"Line no. %d: Token <INT> Lexeme %s found\n\n",line,yytext);
 
 }
 
 {RETURN} {
-	fprintf(tokenfile,"<RETURN>");
+	fprintf(tokenfile,"<RETURN> ");
 	fprintf(logfile,"Line no. %d: Token <RETURN> Lexeme %s found\n\n",line,yytext);
 }
 
 {SWITCH} {
-	fprintf(tokenfile,"<SWITCH>");
+	fprintf(tokenfile,"<SWITCH> ");
 	fprintf(logfile,"Line no. %d: Token <SWITCH> Lexeme %s found\n\n",line,yytext);
 }
 
 {WHILE} {
-	fprintf(tokenfile,"<WHILE>");
+	fprintf(tokenfile,"<WHILE> ");
 	fprintf(logfile,"Line no. %d: Token <WHILE> Lexeme %s found\n\n",line,yytext);
 }
 
 {VOID} {
-	fprintf(tokenfile,"<VOID>");
+	fprintf(tokenfile,"<VOID> ");
 	fprintf(logfile,"Line no. %d: Token <VOID> Lexeme %s found\n\n",line,yytext);
 }
 
 {ADDOP} {
-	fprintf(tokenfile,"<ADDOP,%s>",yytext);
+	fprintf(tokenfile,"<ADDOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <ADDOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {MULOP} {
-	fprintf(tokenfile,"<MULOP,%s>",yytext);
+	fprintf(tokenfile,"<MULOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <MULOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {RELOP} {
-	fprintf(tokenfile,"<RELOP,%s>",yytext);
+	fprintf(tokenfile,"<RELOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <RELOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {INCOP} {
-	fprintf(tokenfile,"<INCOP,%s>",yytext);
+	fprintf(tokenfile,"<INCOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <INCOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {LOGICOP} {
-	fprintf(tokenfile,"<LOGICOP,%s>",yytext);
+	fprintf(tokenfile,"<LOGICOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <LOGICOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {BITOP} {
-	fprintf(tokenfile,"<BITOP,%s>",yytext);
+	fprintf(tokenfile,"<BITOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <BITOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {ASSIGNOP} {
-	fprintf(tokenfile,"<ASSIGNOP,%s>",yytext);
+	fprintf(tokenfile,"<ASSIGNOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <ASSIGNOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {NOT} {
-	fprintf(tokenfile,"<NOT,%s>",yytext);
+	fprintf(tokenfile,"<NOT,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <NOT> Lexeme %s found\n\n",line,yytext);
 }
 
 {LPAREN} {
-	fprintf(tokenfile,"<LPAREN,%s>",yytext);
+	fprintf(tokenfile,"<LPAREN,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <LPAREN> Lexeme %s found\n\n",line,yytext);
 }
 
 {RPAREN} {
-	fprintf(tokenfile,"<RPAREN,%s>",yytext);
+	fprintf(tokenfile,"<RPAREN,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <RPAREN> Lexeme %s found\n\n",line,yytext);
 }
 
 {LCURL} {
-	fprintf(tokenfile,"<LCURL,%s>",yytext);
+	fprintf(tokenfile,"<LCURL,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <LCURL> Lexeme %s found\n\n",line,yytext);
 	st.Enter_Scope();
 }
 
 {RCURL} {
-	fprintf(tokenfile,"<RCURL,%s>",yytext);
+	fprintf(tokenfile,"<RCURL,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <RCURL> Lexeme %s found\n\n",line,yytext);
 	st.Exit_Scope();
 }
 
 {LTHIRD} {
-	fprintf(tokenfile,"<LTHIRD,%s>",yytext);
+	fprintf(tokenfile,"<LTHIRD,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <LTHIRD> Lexeme %s found\n\n",line,yytext);
 }
 
 {RTHIRD} {
-	fprintf(tokenfile,"<RTHIRD,%s>",yytext);
+	fprintf(tokenfile,"<RTHIRD,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <RTHIRD> Lexeme %s found\n\n",line,yytext);
 }
 
 {COMMA} {
-	fprintf(tokenfile,"<COMMA,%s>",yytext);
+	fprintf(tokenfile,"<COMMA,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <COMMA> Lexeme %s found\n\n",line,yytext);
 }
 
 {SEMICOLON} {
-	fprintf(tokenfile,"<SEMICOLON,%s>",yytext);
+	fprintf(tokenfile,"<SEMICOLON,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <SEMICOLON> Lexeme %s found\n\n",line,yytext);
 }
 
 {IDENTIFIER} {
-	fprintf(tokenfile,"<ID,%s>",yytext);
+	fprintf(tokenfile,"<ID,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <ID> Lexeme %s found\n\n",line,yytext);
 	bool did = st.Insert(yytext , "ID" , logfile);
 	if(did)st.printall(logfile);
@@ -418,8 +407,8 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 
 {STRING} {
 	pair<string , int> processed = manipulate_string(yytext);
-	fprintf(logfile,"Line no. %d: Token <STRING> Lexeme %s found --> <String , %s>\n",processed.second,yytext,processed.first.c_str());
-	fprintf(tokenfile,"<STRING,%s>",processed.first.c_str());
+	fprintf(logfile,"Line no. %d: Token <STRING> Lexeme %s found --> <STRING , %s>\n",processed.second,yytext,processed.first.c_str());
+	fprintf(tokenfile,"<STRING,%s> ",processed.first.c_str());
 	
 }
 
@@ -437,8 +426,6 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 	error_cnt++;
 	fprintf(logfile,"Error at line. %d: Invalid prefix on ID or invalid suffix on Number %s\n\n",line,yytext);
 }
-
-
 
 '' {
 	error_cnt++;
@@ -469,7 +456,8 @@ UNRECOGNIZED_CHAR_ERROR ([`@!])
 	fprintf(logfile,"Error at line. %d: Unterminated string %s\n\n",tmp,yytext);
 }
 
-`|@|!|. {
+[^\n] {
+	error_cnt++;
 	fprintf(logfile,"Error at line. %d: Unrecgnized character %s\n\n",line,yytext);
 }
 %%
@@ -490,7 +478,7 @@ int main(int argc,char *argv[]){
 	
 	yyin= fin;
 	yylex();
-    /*symboltable print dao*/
+    st.printall(logfile);
 	fprintf(logfile,"\nTotal Lines : %d\nTotal Errors : %d\n",line,error_cnt);
 	fclose(yyin);
 	fclose(tokenfile);
