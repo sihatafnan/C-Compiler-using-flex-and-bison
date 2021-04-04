@@ -1,5 +1,7 @@
 %option noyywrap
 
+%x cmstate
+
 %{
 #include<stdio.h>
 #include<stdlib.h>
@@ -8,7 +10,7 @@
 #include "1705098_symboltable.h"
 using namespace std;
 
-
+string cm="";
 int line=1;
 int error_cnt=0;
 
@@ -26,7 +28,7 @@ void newlines_in_comment(string str){
 pair<string,int> manipulate_string(string s){
 	int tmp_line = line;
 	string x;
-	for(int i=1;i<s.size()-1;i++){
+	for(int i=0;i<s.size();i++){
 		if(s[i]=='\n')line++;
 		if(s[i]=='\\' and s[i+1]=='\n') 
 		continue;
@@ -109,9 +111,10 @@ LETTER [a-zA-Z]
 NEWLINE [\n]
 WHITESPACE [ \t\v]+
 
-SINGLE_LINE_COMMENT "//"(.*)(\n)
+SINGLE_LINE_COMMENT ("//"(([\\]+([\n]))|[^\n]*)*)
 
-MULTI_LINE_COMMENT "/*"([^*]|("*"[^/]))*"*/"|("//"(([\\]+([\n]))|[^\n]*)*)
+MULTI_LINE_COMMENT ([^*]|("*"[^\n]))*"*/"
+
 
 /* const literals */
 
@@ -119,7 +122,8 @@ EXPONENTIAL ([Ee][-+]?{DIGITS})
 FLOAT_VAR_ONE ({DIGITS}\.{DIGITS})({EXPONENTIAL})?
 FLOAT_VAR_TWO (\.{DIGITS})({EXPONENTIAL})?
 FLOAT_VAR_THREE ({DIGITS})({EXPONENTIAL})?
-FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE})
+FLOAT_VAR_FOUR ({DIGITS})\.({EXPONENTIAL})?
+FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE}|{FLOAT_VAR_FOUR})
 
 INT_LITERAL {DIGITS}
 
@@ -139,13 +143,13 @@ TMD2 (\.{DIGITS})
 TOO_MANY_DECIMAL_POINT_ERROR ({TMD1}|{TMD2})({TMD1}|{TMD2})*
 
 /* ill formed number ex- 11E3.5*/
-TYPE1 ({DIGITS}\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
-TYPE2 (\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
-TYPE3 ({DIGITS})([Ee][-+]?)({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
-TYPE4 ({DIGITS}(\.))([Ee][-+]?)(.*)([Ee][-+]?)?
-TYPE5 ([Ee][-+]?)?({FLOAT_LITERAL}|{TOO_MANY_DECIMAL_POINT_ERROR})([Ee][-+]?)?
+TYPE1 ({DIGITS}\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
+TYPE2 (\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
+TYPE3 ({DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
+TYPE4 ({TOO_MANY_DECIMAL_POINT_ERROR}(\.))([Ee][-+]?)(.*)([Ee][-+]?)?
+TYPE5 ([Ee][-+]?)?({FLOAT_LITERAL})
 TYPE6 ({DIGITS}(\.))
-ILL_FORMED_NUM {TYPE1}|{TYPE2}|{TYPE3}|{TYPE4}|{TYPE5}|{TYPE6}
+ILL_FORMED_NUM {TYPE1}|{TYPE2}|{TYPE3}
 
 /*Invalid Suffix on numeric constant or invalid prefix on identifier for character sequence
 like 12abcd*/
@@ -153,7 +157,7 @@ INVALID_SUFFIX_PREFIX [0-9]*[A-Za-z_]*
 
 
 /*Unfinished character such as ‘a , ‘\n or ‘\’ */
-NMCH_FOR_ERR ([ -~]{-}['\\])
+NMCH_FOR_ERR ([ -~]{-}['])
 SPCH_FOR_ERR (\\[nt\\afrbv0\"])
 
 UNFINISHED_CHAR_ERROR_ONE '({NMCH_FOR_ERR}|{SPCH_FOR_ERR})*
@@ -163,7 +167,7 @@ UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{FORWARD_SLASH}
 
 
 /*Multi character constant error for character sequence like ‘ab’ */
-NMCH ([ -~])      
+NMCH ([ -~]{-}['])      
 SPCH (\\[nt\\afrbv0\"])
 MULTI_CHAR_ERROR '(({NMCH}|{SPCH})+)'
 
@@ -180,7 +184,10 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 
 {NEWLINE}       {line++; }
 
-
+"/*" {
+	BEGIN cmstate;
+	cm += yytext;
+}
 {SINGLE_LINE_COMMENT} {
 				int tmp = line;
                 newlines_in_comment(yytext);     
@@ -188,10 +195,28 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 }
 
 
-{MULTI_LINE_COMMENT} {
+
+<cmstate>"*/" {
 				int tmp = line;
-                newlines_in_comment(yytext); 
-                fprintf(logfile,"Line no. %d: Token <COMMENT> Lexeme %s found\n\n",tmp,yytext);          
+				cm += yytext;
+                newlines_in_comment(cm);
+                fprintf(logfile,"Line no. %d: Token <COMMENT> Lexeme %s found\n\n",tmp,cm.c_str());   
+                cm="";       
+                BEGIN INITIAL;
+}
+
+<cmstate>.|\n {
+	cm += yytext;
+	
+}
+
+<cmstate><<EOF>> {
+	error_cnt++;
+	int tmp = line;
+    newlines_in_comment(cm); 
+	fprintf(logfile,"Error at line. %d: Unterminated comment %s\n\n",tmp,cm.c_str());
+	return 0;
+	
 }
 
 {INT_LITERAL} {
@@ -228,6 +253,7 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 		else if(str[2]=='0')ch='\0';
 		else if(str[2]=='\'')ch='\'';
 		else if(str[2]=='\"')ch='\"';
+		else if(str[2]=='\\')ch='\\';
 		fprintf(tokenfile,"<CONST_CHAR,%c> ",ch);
 		fprintf(logfile,"Line no. %d: Token <CONST_CHAR> Lexeme %s found --> <CHAR_CONST,%c>\n",line,yytext,ch);
 	}
@@ -341,11 +367,6 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 	fprintf(logfile,"Line no. %d: Token <LOGICOP> Lexeme %s found\n\n",line,yytext);
 }
 
-{BITOP} {
-	fprintf(tokenfile,"<BITOP,%s> ",yytext);
-	fprintf(logfile,"Line no. %d: Token <BITOP> Lexeme %s found\n\n",line,yytext);
-}
-
 {ASSIGNOP} {
 	fprintf(tokenfile,"<ASSIGNOP,%s> ",yytext);
 	fprintf(logfile,"Line no. %d: Token <ASSIGNOP> Lexeme %s found\n\n",line,yytext);
@@ -442,14 +463,9 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 	fprintf(logfile,"Error at line. %d: Multi character constant error %s\n\n",line,yytext);
 }
 
-"/*"([^*]|("*"[^/]))*[^"*/"] {
-	error_cnt++;
-	int tmp = line;
-    newlines_in_comment(yytext); 
-	fprintf(logfile,"Error at line. %d: Unterminated comment %s\n\n",tmp,yytext);
-}
 
-\"([^\"\n]|(\\[\n]))* {
+
+\"([^\"\n]|(\\[\n])|(\\\"))* {
 	error_cnt++;
 	int tmp = line;
 	pair<string , int> p = manipulate_string(yytext);

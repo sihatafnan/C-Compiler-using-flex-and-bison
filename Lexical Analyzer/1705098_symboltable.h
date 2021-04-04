@@ -145,7 +145,7 @@ public:
         //char* nms = nm;
         if(fnd != NULL ){
             //cout<<"<"<<nm<<","<<fnd->get_type()<<">"<<" already exists in current ScopeTable"<<endl;
-            //fprintf(logfile_ , "%s already exists in current ScopeTable\n" , nm.c_str() );
+            fprintf(logfile_ , "%s already exists in current ScopeTable\n" , nm.c_str() );
             return false;
         }
         else{
