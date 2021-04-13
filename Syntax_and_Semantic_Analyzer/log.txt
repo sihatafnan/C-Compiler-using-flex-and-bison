@@ -1,0 +1,47 @@
+At line no: 1: type_specifier : INT 
+int
+
+line no. 1: declaration_list : ID
+x
+
+At line no: 1: declaration_list : declaration_list COMMA ID
+x,y
+
+At line no: 1: declaration_list : declaration_list COMMA ID
+x,y,z
+
+At line no: 1 var_declaration : type_specifier declaration_list SEMICOLON
+
+int x,y,z;
+
+At line no: 1: unit : var_declation
+
+int x,y,z;
+
+At line no: 1: program : unit
+
+int x,y,z;
+
+At line no: 2: type_specifier : INT 
+int
+
+At line no: 2 var_declaration : type_specifier declaration_list SEMICOLON
+
+int ;
+
+At line no: 2: unit : var_declation
+
+int ;
+
+At line no: 2  program : program unit
+int x,y,z;
+int ;
+
+		Symbol Table : 
+
+ScopeTable # 1
+
+Total Lines : 2 
+
+Total Errors : 0 
+
