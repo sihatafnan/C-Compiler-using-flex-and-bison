@@ -85,7 +85,8 @@ extern int yydebug;
     ADDOP = 291,
     MULOP = 292,
     RELOP = 293,
-    LOGICOP = 294
+    LOGICOP = 294,
+    LOWER_THAN_ELSE = 295
   };
 #endif
 /* Tokens.  */
@@ -126,16 +127,17 @@ extern int yydebug;
 #define MULOP 292
 #define RELOP 293
 #define LOGICOP 294
+#define LOWER_THAN_ELSE 295
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 57 "parser.y"
+#line 68 "parser.y"
 
      SymbolInfo *symbol;
 
-#line 139 "y.tab.h"
+#line 141 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

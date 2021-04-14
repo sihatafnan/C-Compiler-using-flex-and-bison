@@ -30,32 +30,32 @@ pair<string,int> manipulate_string(string s){
 	string x;
 	for(int i=0;i<s.size();i++){
 		if(s[i]=='\n')line++;
-		if(s[i]=='\\' and s[i+1]=='\n') 
+		if(s[i]=='\\' and s[i+1]=='\n')
 		continue;
 		int ok=0;
-		if(s[i]=='\\' and s[i+1]=='n') 
+		if(s[i]=='\\' and s[i+1]=='n')
 			x.push_back('\n');
-		else if(s[i]=='\\' and s[i+1]=='t') 
+		else if(s[i]=='\\' and s[i+1]=='t')
 			x.push_back('\t');
-		else if(s[i]=='\\' and s[i+1]=='\\') 
+		else if(s[i]=='\\' and s[i+1]=='\\')
 			x.push_back('\\');
-		else if(s[i]=='\\' and s[i+1]=='\'') 
+		else if(s[i]=='\\' and s[i+1]=='\'')
 			x.push_back('\'');
-		else if(s[i]=='\\' and s[i+1]=='\"') 
+		else if(s[i]=='\\' and s[i+1]=='\"')
 			x.push_back('\"');
-		else if(s[i]=='\\' and s[i+1]=='a') 
+		else if(s[i]=='\\' and s[i+1]=='a')
 			x.push_back('\a');
-		else if(s[i]=='\\' and s[i+1]=='f') 
+		else if(s[i]=='\\' and s[i+1]=='f')
 			x.push_back('\f');
-		else if(s[i]=='\\' and s[i+1]=='r') 
+		else if(s[i]=='\\' and s[i+1]=='r')
 			x.push_back('\r');
-		else if(s[i]=='\\' and s[i+1]=='v') 
+		else if(s[i]=='\\' and s[i+1]=='v')
 			x.push_back('\v');
-		else if(s[i]=='\\' and s[i+1]=='b') 
+		else if(s[i]=='\\' and s[i+1]=='b')
 			x.push_back('\b');
-		else if(s[i]=='\\' and s[i+1]=='\0') 
+		else if(s[i]=='\\' and s[i+1]=='\0')
 			x.push_back('\0');
-		else if(s[i]=='\n' ) 
+		else if(s[i]=='\n' )
 			continue;
 		else{
 			ok=1;
@@ -63,9 +63,9 @@ pair<string,int> manipulate_string(string s){
 		}
 		if(ok==0) i++;
 	}
-	
+
 	return mp(x , tmp_line); /* returns modified string and starting line cnt*/
-} 
+}
 
 
 %}
@@ -86,6 +86,7 @@ RETURN "return"
 SWITCH "switch"
 WHILE "while"
 VOID "void"
+PRINTLN "printf"
 
 /*operators*/
 ADDOP [+-]
@@ -134,7 +135,7 @@ CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
 
 IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 
-STRING \"([^\n]|(\\[\n])|(\"))*\" 	
+STRING \"([^\n]|(\\[\n])|(\"))*\"
 
 /* errors */
 
@@ -168,7 +169,7 @@ UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{FORWARD_SLASH}
 
 
 /*Multi character constant error for character sequence like ‘ab’ */
-NMCH ([ -~]{-}['])      
+NMCH ([ -~]{-}['])
 SPCH (\\[nt\\afrbv0\"])
 MULTI_CHAR_ERROR '(({NMCH}|{SPCH})+)'
 
@@ -190,27 +191,27 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 	cm += yytext;
 }
 {SINGLE_LINE_COMMENT} {
-                newlines_in_comment(yytext);          
+                newlines_in_comment(yytext);
 }
 
 <cmstate>"*/" {
 				cm += yytext;
                 newlines_in_comment(cm);
-         		cm="";       
+         		cm="";
                 BEGIN INITIAL;
 }
 
 <cmstate>.|\n {
 	cm += yytext;
-	
+
 }
 
 <cmstate><<EOF>> {
 	error_cnt++;
 	int tmp = line;
-    newlines_in_comment(cm); 
+    newlines_in_comment(cm);
 	return 0;
-	
+
 }
 
 {INT_LITERAL} {
@@ -234,7 +235,7 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 		return CONST_CHAR;
 	}
 	else {
-		
+
 		char ch;
 		if(str[2]=='n')ch='\n';
 		else if(str[2]=='t')ch='\t';
@@ -247,7 +248,7 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 		else if(str[2]=='\'')ch='\'';
 		else if(str[2]=='\"')ch='\"';
 		else if(str[2]=='\\')ch='\\';
-	    
+
 		SymbolInfo *s= new  SymbolInfo(yytext, "CONST_CHAR");
 		yylval.symbol = s;
 		return CONST_CHAR;
@@ -257,6 +258,10 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 
 {BREAK} {
 	return BREAK;
+}
+
+{PRINTLN} {
+  return PRINTLN;
 }
 
 {CASE} {
@@ -400,7 +405,7 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 
 {STRING} {
 	pair<string , int> processed = manipulate_string(yytext);
-	
+
 }
 
 {TOO_MANY_DECIMAL_POINT_ERROR} {

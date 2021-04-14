@@ -6,6 +6,7 @@
 #include<cmath>
 #include<string>
 #include<vector>
+#include<bits/stdc++.h>
 #include "symboltable.h"
 //#define YYSTYPE SymbolInfo*
 
@@ -23,19 +24,28 @@ FILE *fp;
 FILE *errorfile = fopen("error.txt","w");
 FILE *logfile = fopen("log.txt" , "w");
 
-SymbolTable table(7);
+SymbolTable table(30);
 
 extern int line;
 extern int error_cnt;
-vector<string>code_snippet;
+//vector<string>code_snippet;
 
 string variable_type;
-string codes;
+//string codes;
 struct var{
     string var_name;
     int var_size;  // it is set to -1 for variables
 } temp_var;
 vector<var> var_list;  // for identifier(variable, array) insertion into symbolTable
+
+struct param {
+    string type;
+    string name;  //set to empty string "" for function declaration
+} my_param;
+
+vector<param> param_list;  // parameter list for function declaration, definition
+
+vector<string> arg_list;  // argument list for function call
 
 string to_str(int n)
 {
@@ -63,20 +73,20 @@ void yyerror(char *s)
      SymbolInfo *symbol;
 }
 
-%token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE 
-%token VOID RETURN SWITCH CASE DEFAULT CONTINUE 
+%token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE
+%token VOID RETURN SWITCH CASE DEFAULT CONTINUE
 %token ASSIGNOP INCOP DECOP NOT LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD COMMA SEMICOLON PRINTLN
 
 %token<symbol>CONST_INT
 %token<symbol>CONST_FLOAT
-%token<symbol>CONST_CHAR 
+%token<symbol>CONST_CHAR
 %token<symbol>ID
 %token<symbol>ADDOP
 %token<symbol>MULOP
 %token<symbol>RELOP
 %token<symbol>LOGICOP
 
-%type<symbol>compound_statement type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term func_definition
+%type<symbol>compound_statement type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term func_definition program
 
 
 %%
@@ -87,54 +97,82 @@ start : program
 	}
 	;
 
-program : program unit 
+program : program unit
 	{
-		fprintf(logfile,"At line no: %d  program : program unit\n",line);
-			
-			code_snippet.pb($2->get_name());
-			
-			for(int i=0;i<code_snippet.size();i++){
-				fprintf(logfile,"%s\n",code_snippet[i].c_str());
-			}
-			fprintf(logfile,"\n");
+		fprintf(logfile,"At line no: %d  program : program unit\n\n",line);
+		SymbolInfo *x = new SymbolInfo((string)$1->get_name()+(string)$2->get_name(), "NON_TERMINAL");
+		$$ = x;
+		fprintf(logfile , "%s%s\n\n" , $1->get_name().c_str() , $2->get_name().c_str());
 	}
 	| unit
 	{
 		fprintf(logfile,"At line no: %d: program : unit\n\n",line);
-		fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+		fprintf(logfile,"%s\n",$1->get_name().c_str());
+		$$ = new SymbolInfo($1->get_name()+"\n", "NON_TERMINAL");
 
-		code_snippet.pb($1->get_name());
 	}
 	;
-	
+
 unit : var_declaration
 	{
 		fprintf(logfile,"At line no: %d: unit : var_declation\n\n",line);
-		fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+		fprintf(logfile,"%s\n",$1->get_name().c_str());
 
-		SymbolInfo *x=new SymbolInfo($1->get_name(),"unit");
-		$$=x;	
+		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      | func_declaration
 	{
+		fprintf(logfile,"At line no: %d: unit : func_declaration\n\n",line);
+		fprintf(logfile,"%s\n",$1->get_name().c_str());
 
-	} 
+		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
+	}
      | func_definition
 	{
+    fprintf(logfile,"At line no: %d: unit : func_definition\n\n",line);
+		fprintf(logfile,"%s\n",$1->get_name().c_str());
 
+		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      ;
-     
+
 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 	{
+    $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+");", "NON_TERMINAL");
+    fprintf(logfile , "At line no %d: func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n\n",line);
+    fprintf(logfile , "%s %s(%s);\n\n" , $1->get_name().c_str() , $2->get_name().c_str(),$4->get_name().c_str());
+
+    /* checking whether already declared or not */
+    SymbolInfo* temp = table.Lookup($2->get_name());
+    if(temp != NULL) {
+			error_cnt++;
+			fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
+		}
+		else{
+			table.Insert($2->get_name() , "ID" , logfile);
+		}
 
 	}
 	| type_specifier ID LPAREN RPAREN SEMICOLON
 	{
+		$$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"();", "NON_TERMINAL");
+		fprintf(logfile , "At line no %d: func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
+		fprintf(logfile , "%s %s();\n\n" , $1->get_name().c_str() , $2->get_name().c_str());
+
+
+		/* checking whether already declared or not */
+		SymbolInfo* temp = table.Lookup($2->get_name());
+		if(temp != NULL) {
+			error_cnt++;
+			fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
+		}
+		else{
+			table.Insert($2->get_name() , "ID" , logfile);
+		}
 
 	}
 		;
-		 
+
 func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
 	{
 
@@ -143,160 +181,190 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statem
  	{
 
 	}
-	 	;				
+	 	;
 
 
 parameter_list  : parameter_list COMMA type_specifier ID
+		{
+			$$ = new SymbolInfo($1->get_name()+","+$3->get_name()+" "+$4->get_name(), "NON_TERMINAL");
+			fprintf(logfile,"At line no %d: parameter_list  : parameter_list COMMA type_specifier ID\n\n",line);
+			fprintf(logfile , "%s , %s %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str(),$4->get_name().c_str());
+
+			/* adding parameter to parameter list */
+            my_param.type = $3->get_name();
+            my_param.name = $4->get_name();
+            param_list.pb(my_param);
+
+			$$->push_in_param($4->get_name() , $3->get_name());
+
+		}
 		| parameter_list COMMA type_specifier
+		{
+			$$ = new SymbolInfo($1->get_name()+","+$3->get_name(), "NON_TERMINAL");
+			fprintf(logfile,"At line no %d: parameter_list  : parameter_list COMMA type_specifier\n\n",line);
+			fprintf(logfile , "%s , %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str());
+
+			/* adding parameter to parameter list */
+            my_param.type = $3->get_name();
+            my_param.name = "";
+            param_list.pb(my_param);
+
+			$$->push_in_param("", $3->get_name());
+		}
  		| type_specifier ID
+		{
+			$$ = new SymbolInfo($1->get_name()+" "+$2->get_name(), "NON_TERMINAL");
+			fprintf(logfile,"At line no %d: parameter_list  : type_specifier ID\n\n",line);
+			fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
+
+			/* adding parameter to parameter list */
+            my_param.type = $1->get_name();
+            my_param.name = $2->get_name();
+            param_list.pb(my_param);
+
+			$$->push_in_param($2->get_name() , $1->get_name());
+		}
 		| type_specifier
+		{
+			$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
+			fprintf(logfile,"At line no %d: parameter_list  : type_specifier\n\n",line);
+			fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str());
+
+			/* adding parameter to parameter list */
+            my_param.type = "";
+            my_param.name = $1->get_name();
+            param_list.pb(my_param);
+
+			$$->push_in_param($1->get_name() , "");
+		}
  		;
 
- 		
+
 compound_statement : LCURL statements RCURL
  		    | LCURL RCURL
  		    ;
- 		    
+
 var_declaration : type_specifier declaration_list SEMICOLON
 		{
 			fprintf(logfile,"At line no: %d var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
-			fprintf(logfile,"%s ",$1->get_type().c_str());
-			
-			codes="";
-			codes += $1->get_type()+" ";
+			fprintf(logfile,"%s %s;\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 
-			//print the declaration_list i.e. the variables
-			for(int i=0;i<$2->edge.size();i++){
-				fprintf(logfile,"%s",$2->edge[i]->get_name().c_str());
-				codes += $2->edge[i]->get_name();
-				
-				if($2->edge[i]->sz>0)
-					fprintf(logfile,"[%d]",$2->edge[i]->sz), codes+="["+to_str($2->edge[i]->sz)+"]";
-				
-				if(i<$2->edge.size()-1)
-					fprintf(logfile,","), codes+=",";
-				cout<<$2->edge[i]->get_name()<<endl;
+			$$ = new SymbolInfo((string)$1->get_name()+(string)" "+(string)$2->get_name()+(string)";"+(string)"\n"+(string)"\n", "NON_TERMINAL");
+
+
+
+			/* inserting in symboltable */
+
+			if($1->get_name()=="void"){
+				error_cnt++;
+				fprintf(errorfile,"Error at line %d: variable cannot be of type void\n\n",line);
+
 			}
+			else{
+				/* checking whether already declared or not */
+				for(int i=0;i<var_list.size();i++){
+					SymbolInfo* temp = table.Lookup(var_list[i].var_name);
+					if(temp != NULL) {
+						error_cnt++;
+						fprintf(errorfile , "Error at line %d: Multiple declaration of %s" , line , var_list[i].var_name.c_str());
+					}
+					else{
+						table.Insert(var_list[i].var_name , "ID" , logfile);
+					}
+				}
 
-			fprintf(logfile,";\n\n");
-			codes+=";";
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"var_declaration");
-			$$=newSymbol;
-
-			$2->edge.clear();
+			}
+			var_list.clear();
 		}
- 		 ;
- 		 
+ 		;
+
 type_specifier	: INT
 		{
-			fprintf(logfile,"At line no: %d: type_specifier : INT \n",line);
+			fprintf(logfile,"At line no: %d: type_specifier : INT \n\n",line);
 			variable_type = "int";
 
-			SymbolInfo *newSymbol = new SymbolInfo("int");
+			SymbolInfo *newSymbol = new SymbolInfo("int" , "NON_TERMINAL");
 			$$ = newSymbol;
-			fprintf(logfile,"%s\n\n",$$->get_type().c_str());
+			fprintf(logfile,"%s\n\n",$$->get_name().c_str());
 		}
  		| FLOAT
+		{
+			fprintf(logfile,"At line no: %d: type_specifier : FLOAT \n",line);
+			variable_type = "float";
+
+			SymbolInfo *newSymbol = new SymbolInfo("float" , "NON_TERMINAL");
+			$$ = newSymbol;
+			fprintf(logfile,"%s\n\n",$$->get_name().c_str());
+		}
  		| VOID
- 		;
- 		
+ 		{
+			 fprintf(logfile,"At line no: %d: type_specifier : VOID \n",line);
+			variable_type = "void";
+
+			SymbolInfo *newSymbol = new SymbolInfo("void" , "NON_TERMINAL");
+			$$ = newSymbol;
+			fprintf(logfile,"%s\n\n",$$->get_name().c_str());
+		}
+		 ;
+
 declaration_list : declaration_list COMMA ID
 		{
-			fprintf(logfile,"At line no: %d: declaration_list : declaration_list COMMA ID\n",line);
-			
-			$3->setIdentity("var");
-			$3->setVariableType(variable_type);
-			
-			$$->edge.push_back($3);
+			fprintf(logfile,"At line no: %d: declaration_list : declaration_list COMMA ID\n\n",line);
+			$$ = new SymbolInfo((string)$1->get_name()+(string)","+(string)$3->get_name(), "NON_TERMINAL");
+			fprintf(logfile , "%s,%s\n\n" , $1->get_name().c_str() , $3->get_name().c_str());
 
-			//print the declaration_list
-			for(int i=0;i<$$->edge.size();i++)
-			{
-				fprintf(logfile,"%s",$$->edge[i]->get_name().c_str());
+			/* keeping track of identifier(variable) */
+            temp_var.var_name = (string)$3->get_name();
+            temp_var.var_size = -1;
+            var_list.push_back(temp_var);
 
-				if($$->edge[i]->sz>0)
-					fprintf(logfile,"[%d]",$$->edge[i]->sz);
-				
-				if(i<$$->edge.size()-1)
-					fprintf(logfile,",");
 
-				else
-					fprintf(logfile,"\n\n");
-			}
-			/*
-			//---------------------------------------------------------------------------
-			//semantics and insertion in the table
- 			if(variable_type=="void") {
- 				fprintf(error,"semantic error found at line %d: variable cannot be of type void\n\n",line);
- 				error_cnt++;
- 			}
-
- 			else
- 			{
- 				//insert in SymbolTable directly if not declared before
- 				if(!table.Insert($3->get_name(),"ID",logfile)) {
- 					fprintf(error,"semantic error found at line %d: variable \'%s\' declared before\n\n",line,$1->get_name().c_str());
- 					error_cnt++;
- 				}
-
-				else {
- 					SymbolInfo *temp=table.Lookup($3->get_name());
- 					temp->setVariableType(variable_type);
- 					temp->allocateMemory(variable_type,1);
- 					temp->setIdentity("var");
- 				}
- 			}
- 			//---------------------------------------------------------------------------
-			*/
 		}
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
+		{
+			fprintf(logfile,"At line no %d: declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
+			$$ = new SymbolInfo((string)$1->get_name()+(string)","+(string)$3->get_name()+(string)"["+(string)$5->get_name()+(string)"]", "NON_TERMINAL");
+			fprintf(logfile , "%s,%s[%s]\n\n" , $1->get_name().c_str() , $3->get_name().c_str() , $5->get_name().c_str());
+
+			/* keeping track of identifier(array) */
+            temp_var.var_name = (string)$3->get_name();
+            stringstream temp_str((string) $5->get_name());
+            temp_str >> temp_var.var_size;
+            var_list.pb(temp_var);
+		}
+
  		  | ID
 		{
 			fprintf(logfile,"At line no %d: declaration_list : ID\n\n",line);
  			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
- 			SymbolInfo *newSymbol = new SymbolInfo("declaration_list");
- 			$$ = newSymbol;
+ 			$$ = new SymbolInfo($1->get_name() ,  "ID");
 
- 			$1->setVariableType(variable_type);$1->setIdentity("var");
+			 /* keeping track of identifier(variable) */
+            temp_var.var_name = (string)$1->get_name();
+            temp_var.var_size = -1;
+            var_list.pb(temp_var);
 
- 			$$->setIdentity("declaration_list");
- 			$$->edge.push_back($1);
 
-			/*
- 			//---------------------------------------------------------------------------
-			//semantics and insertion in the table
- 			if(variable_type=="void") {
- 				fprintf(error,"semantic error found at line %d: variable cannot be of type void\n\n",line);
- 				semanticErr++;
- 			}
+		}
+ 		| ID LTHIRD CONST_INT RTHIRD
+		{
+			fprintf(logfile , "At line no %d:  declaration_list: ID LTHIRD CONST_INT RTHIRD\n\n",line);
+			$$ = new SymbolInfo((string)$1->get_name()+(string)"["+(string)$3->get_name()+(string)"]", "NON_TERMINAL");
+			fprintf(logfile , "%s[%s]\n\n",$1->get_name().c_str() , $3->get_name().c_str());
 
- 			else {
- 				//insert in SymbolTable directly if not declared before
- 				if(!table.Insert($1->get_name(),"ID",logfile)) {
- 					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->get_name().c_str());
- 					semanticErr++;
- 				}
+			temp_var.var_name = (string)$1->get_name();
+            stringstream temp_str((string) $3->get_name());
+            temp_str >> temp_var.var_size;
+            var_list.pb(temp_var);
 
- 				else {
- 					SymbolInfo *temp=table.lookUp($1->get_name());
- 					temp->setVariableType(variable_type);
- 					temp->allocateMemory(variable_type,1);
- 					temp->setIdentity("var");
- 				}
- 			}
- 			//---------------------------------------------------------------------------
-		
-			*/
-		}   
- 		  | ID LTHIRD CONST_INT RTHIRD
+		}
  		  ;
- 		  
+
 statements : statement
 	   | statements statement
 	   ;
-	   
+
 statement : var_declaration
 	  | expression_statement
 	  | compound_statement
@@ -307,57 +375,57 @@ statement : var_declaration
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
 	  | RETURN expression SEMICOLON
 	  ;
-	  
-expression_statement 	: SEMICOLON			
-			| expression SEMICOLON 
+
+expression_statement 	: SEMICOLON
+			| expression SEMICOLON
 			;
-	  
-variable : ID 		
-	 | ID LTHIRD expression RTHIRD 
+
+variable : ID
+	 | ID LTHIRD expression RTHIRD
 	 ;
-	 
- expression : logic_expression	
-	   | variable ASSIGNOP logic_expression 	
+
+ expression : logic_expression
+	   | variable ASSIGNOP logic_expression
 	   ;
-			
-logic_expression : rel_expression 	
-		 | rel_expression LOGICOP rel_expression 	
+
+logic_expression : rel_expression
+		 | rel_expression LOGICOP rel_expression
 		 ;
-			
-rel_expression	: simple_expression 
-		| simple_expression RELOP simple_expression	
+
+rel_expression	: simple_expression
+		| simple_expression RELOP simple_expression
 		;
-				
-simple_expression : term 
-		  | simple_expression ADDOP term 
+
+simple_expression : term
+		  | simple_expression ADDOP term
 		  ;
-					
+
 term :	unary_expression
      |  term MULOP unary_expression
      ;
 
-unary_expression : ADDOP unary_expression  
-		 | NOT unary_expression 
-		 | factor 
+unary_expression : ADDOP unary_expression
+		 | NOT unary_expression
+		 | factor
 		 ;
-	
-factor	: variable 
+
+factor	: variable
 	| ID LPAREN argument_list RPAREN
 	| LPAREN expression RPAREN
-	| CONST_INT 
+	| CONST_INT
 	| CONST_FLOAT
-	| variable INCOP 
+	| variable INCOP
 	| variable DECOP
 	;
-	
+
 argument_list : arguments
 			  |
 			  ;
-	
+
 arguments : arguments COMMA logic_expression
 	      | logic_expression
 	      ;
- 
+
 
 %%
 int main(int argc,char *argv[])
@@ -371,17 +439,16 @@ int main(int argc,char *argv[])
 
 	yyin=fp;
 	yyparse();
-	
+
 	fprintf(logfile,"\t\tSymbol Table : \n\n");
 	table.printall(logfile);
 	fprintf(logfile,"Total Lines : %d \n\n",line);
 	fprintf(logfile,"Total Errors : %d \n\n",error_cnt);
-	fprintf(errorfile,"Total Errors : %d \n\n",error_cnt);
-	
+	fprintf(errorfile,"\nTotal Errors : %d \n\n",error_cnt);
+
 	fclose(fp);
 	fclose(logfile);
 	fclose(errorfile);
 
 	return 0;
 }
-

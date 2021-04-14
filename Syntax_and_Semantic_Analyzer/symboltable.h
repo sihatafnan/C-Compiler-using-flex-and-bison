@@ -35,42 +35,40 @@ typedef map<int,int> mii;
 const int maxn=1010;
 const int INF = 1e5+10;
 
+struct parameter {
+    string param_type;
+    string param_name;  //set to empty string "" for function declaration
+} ;
+
 class SymbolInfo{
     string name;
     string type;
-    string variable_type, identity , return_type;
     SymbolInfo* next;
 public:
-    vector<SymbolInfo*> edge;
-    int sz;
-    int *ivalue;float *fvalue; char *cvalue;
+    vector<parameter>param;
+
+    void push_in_param(string nm , string tp){
+      parameter temp_param;
+        temp_param.param_type = tp;
+        temp_param.param_name = nm;
+        param.pb(temp_param);
+    }
 
     SymbolInfo(string nm,string tp){
         name = nm;
         type = tp;
-        this->return_type="";
-        this->variable_type="";
-        ivalue=0; fvalue=0; cvalue=0; sz=0;
         next = nullptr;
     }
 
     SymbolInfo(string type) {
         this->type=type;
         this->name="";
-        this->return_type="";
-        this->variable_type="";
-
-        ivalue=0; fvalue=0; cvalue=0; sz=0;
-
 		next = 0;
 	}
 
     SymbolInfo(){
         this->type="";
         this->name="";
-        this->return_type="";
-        this->variable_type="";
-        ivalue=0; fvalue=0; cvalue=0; sz=0;
         next = nullptr;
     }
 
@@ -100,46 +98,6 @@ public:
         next = new_;
     }
 
-    string getReturnType() {
-		return return_type;
-	}
-
-	void setReturnType(string rtype) {
-		this->return_type = rtype;
-	}
-
-	string getIdentity() {
-        return identity;
-	}
-
-	void setIdentity(string identity) {
-        this->identity = identity;
-	}
-
-	string getVariableType() {
-		return variable_type;
-	}
-
-	void setVariableType(string variable_type) {
-		this->variable_type = variable_type;
-	}
-
-    void allocateMemory(string choice, int n) {
-        if(choice=="int") {
-            ivalue=new int[n];
-            fill(ivalue,ivalue+n,0);
-        }
-
-        else if(choice=="float") {
-            fvalue=new float[n];
-            fill(fvalue,fvalue+n,0.0);
-        }
-
-        else if(choice=="char") {
-            cvalue=new char[n];
-            fill(cvalue,cvalue+n,'#');
-        }
-	}
 
 };
 class ScopeTable{
@@ -186,8 +144,8 @@ public:
         {
             if(tmp->get_name() == nm){
                 if(pr_condition){
-                    cout<<"Found in ScopeTable# "<<unique_id<<" at position "<<hash_val<<", "<<pos<<endl;
-                }        
+                    //cout<<"Found in ScopeTable# "<<unique_id<<" at position "<<hash_val<<", "<<pos<<endl;
+                }
                 return tmp;
             }
             tmp = tmp->get_next();
@@ -233,7 +191,7 @@ public:
             }
 
         }
-        
+
     }
 
     void Print(FILE* logfile_){
@@ -241,7 +199,7 @@ public:
         fprintf(logfile_ , "ScopeTable # %s\n" , unique_id.c_str());
         ffr(i,0,no_of_buckets){
             //cout<<i<<" -->  ";
-            
+
             SymbolInfo *tmp = sc_table[i];
             if(tmp==NULL)continue;
             fprintf(logfile_ , "%d --> ",i);
@@ -272,7 +230,7 @@ public:
             cout<<"Deleted Entry "<<hash_val<<", 0 from current ScopeTable"<<endl;
             return true;
         }
-        
+
         SymbolInfo *prev ;
         int pos = 0;
         while (target != NULL)
@@ -301,7 +259,7 @@ public:
     void set_pr_condition(int a){
         pr_condition = a;
     }
-    
+
     ~ScopeTable()
     {
         ffr(i,0,no_of_buckets)
@@ -353,13 +311,13 @@ public:
         return psi(s , i+1);
     }
     int toint(string str){
-        stringstream geek(str); 
-        int x = 0; 
-        geek >> x; 
+        stringstream geek(str);
+        int x = 0;
+        geek >> x;
         return x;
     }
     ///3 args : replace str(last part) from s with another string.idx is start index of str
-    string replace_last_part(string s , int idx , string str){   
+    string replace_last_part(string s , int idx , string str){
         int len = str.size();
         int num = toint(str) + 1;
         string sr = to_string(num);
@@ -406,7 +364,7 @@ public:
             new_scopetable = new ScopeTable(n, current_id , NULL);
         }
         Scopes.push(new_scopetable);
-        current = new_scopetable; 
+        current = new_scopetable;
         del_recent = false;
     }
 
@@ -421,7 +379,7 @@ public:
             new_scopetable = new ScopeTable(num, current_id , NULL);
         }
         Scopes.push(new_scopetable);
-        current = new_scopetable; 
+        current = new_scopetable;
     }
 
     ///Remove the current ScopeTable
@@ -461,7 +419,7 @@ public:
             }
             temp = temp->get_parent();
         }
-        cout<<"Not found"<<endl;
+        //cout<<"Not found"<<endl;
         return NULL;
     }
 
@@ -491,4 +449,3 @@ public:
        clear_recursively(current);
     }
 };
-

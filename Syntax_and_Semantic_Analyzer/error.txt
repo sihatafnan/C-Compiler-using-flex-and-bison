@@ -1,2 +1,3 @@
-Total Errors : 0 
+Error at line 15: Multiple declaration of a
+Total Errors : 1 
 
