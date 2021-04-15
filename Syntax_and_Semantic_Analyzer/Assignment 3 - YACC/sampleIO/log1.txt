@@ -57,7 +57,7 @@ At line no: 3 type_specifier : VOID
 
 void 
 
-At line no: 3 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
+At line no: 3 func_declaration : type_specifier ID LPAREN RPAREN SEMICOLON
 
 void  foo();
 
@@ -628,9 +628,9 @@ At line no: 18 variable : ID LTHIRD expression RTHIRD
 
 a[0]
 
-At line no: 18 factor : variable
+At line no: 18 variable : ID LTHIRD expression RTHIRD
 
-a
+a[0]
 
 At line no: 18 unary_expression : factor
 
@@ -969,9 +969,14 @@ At line no: 20 logic_expression : rel_expression
 
 2*3
 
-At line no: 20 argument_list : argument_list COMMA logic_expression
+At line no: 20 arguments : arguments COMMA logic_expression
 
 1 , 2*3
+
+At line no: 20 argument_list : arguments
+
+1 , 2*3
+
 
 At line no: 20 factor : ID LPAREN argument_list RPAREN
 
@@ -1169,7 +1174,7 @@ int  a[2],c,i,j;
 float  d;
 a[0]=1;
 a[1]=5;
-i=a+a;
+i=a[0]+a[1];
 j=2*3+(5%3<4&&8)||2;
 d=var( 1 , 2*3 )+3.5*2;
 return 0;

@@ -17,7 +17,7 @@ using namespace std;
 #define FastIO ios::sync_with_stdio(false); cin.tie(0);cout.tie(0)
 
 // #define logfile freopen("1705098_log.txt","w+",stdout)
-//FILE *logfile_ = fopen("1705098_log.txt","w");
+//FILE *logfile_ = fopen("log.txt","w");
 
 
 
@@ -40,12 +40,30 @@ struct parameter {
     string param_name;  //set to empty string "" for function declaration
 } ;
 
+struct variable{
+    string name;
+    string type;
+    int sz;
+};
+
 class SymbolInfo{
     string name;
     string type;
+    string return_type,variable_type,identity;
+    bool is_declared_func;
     SymbolInfo* next;
 public:
     vector<parameter>param;
+    vector<variable>var;
+
+
+    void set_is_declared_func(bool state){
+      is_declared_func = state;
+    }
+
+    bool get_is_declared_func(){
+      return is_declared_func;
+    }
 
     void push_in_param(string nm , string tp){
       parameter temp_param;
@@ -54,9 +72,42 @@ public:
         param.pb(temp_param);
     }
 
+    void push_in_var(string nm , string tp , int n){
+        variable temp_var;
+        temp_var.type = tp;
+        temp_var.name = nm;
+        temp_var.sz = n;
+        var.pb(temp_var);
+    }
+
+    string getReturnType() {
+		return return_type;
+	}
+
+	void setReturnType(string rtype) {
+		this->return_type = rtype;
+	}
+
+	string getIdentity() {
+        return identity;
+	}
+
+	void setIdentity(string identity) {
+        this->identity = identity;
+	}
+
+	string getVariableType() {
+		return variable_type;
+	}
+
+	void setVariableType(string variable_type) {
+		this->variable_type = variable_type;
+	}
+
     SymbolInfo(string nm,string tp){
         name = nm;
         type = tp;
+        is_declared_func = false;
         next = nullptr;
     }
 
@@ -353,12 +404,13 @@ public:
 
     /// Create a new ScopeTable and make it current one. Also
     ///make the previous current table as its parentScopeTable
-    void Enter_Scope(){
+    void Enter_Scope(FILE *logfile_){
         current_id = get_new_id();
         ScopeTable *new_scopetable;
         if(!Scopes.empty()){
             new_scopetable = new ScopeTable(n , current_id  , Scopes.top());
             //cout<<"New ScopeTable with id "<<current_id<<" created"<<endl;
+            fprintf(logfile_, "New ScopeTable with id %s created\n", current_id.c_str());
         }
         else{
             new_scopetable = new ScopeTable(n, current_id , NULL);
@@ -383,11 +435,12 @@ public:
     }
 
     ///Remove the current ScopeTable
-    void Exit_Scope(){
+    void Exit_Scope(FILE *logfile_){
         del_recent = true;
         del_recent_scope = Scopes.top()->get_id();
         Scopes.pop();
         //cout<<"ScopeTable with id "<<current_id<<" removed"<<endl;
+        fprintf(logfile_, "ScopeTable with id %s removed\n", current_id.c_str());
         current=Scopes.top();
         current_id = current->get_id();
     }
@@ -421,6 +474,17 @@ public:
         }
         //cout<<"Not found"<<endl;
         return NULL;
+    }
+
+    SymbolInfo *Lookup_in_current(string name){
+        ScopeTable *temp = current;
+
+        temp->set_pr_condition(0);
+        if(temp->Lookup(name)){
+            temp->set_pr_condition(1);
+            return temp->Lookup(name);
+        }
+        else return NULL;
     }
 
     ///Print the current ScopeTable
