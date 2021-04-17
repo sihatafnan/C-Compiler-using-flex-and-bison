@@ -28,10 +28,10 @@ SymbolTable table(30);
 
 extern int line;
 extern int error_cnt;
-//vector<string>code_snippet;
+
 
 string variable_type;
-//string codes;
+string current_return_type;
 struct var{
     string var_name;
     int var_size;  // it is set to -1 for variables
@@ -50,12 +50,45 @@ string to_str(int n)
 		int r=n%10;
 		n/=10;
 		temp.push_back(r+48);
-	}
+  }
 
 	reverse(temp.begin(),temp.end());
 	return temp;
 }
 
+string modified_name(string str){
+  string done="";
+  for(int i=0;i<str.size();i++){
+
+    if(str[i]!='['){
+      done+=str[i];
+    }else{
+      return done;
+    }
+  }
+  return str;
+}
+
+bool is_ara_idx_valid(string nm , int sz){
+  //nm = a[4] , sz = 5 ; so returns true
+  //float idx not handled yet;
+  string idx="";
+  for(int i=0;i<nm.size();i++){
+    if(nm[i]=='['){
+      i++;
+      while(nm[i]!=']'){
+        idx += nm[i];
+        i++;
+      }
+    }
+  }
+  stringstream geek(idx);
+  int x = 0;
+  geek >> x;
+
+  if(x<sz && x>=0)return true;
+  else return false;
+}
 void yyerror(char *s)
 {
 	//write your code
@@ -114,21 +147,18 @@ unit : var_declaration
 	{
 		fprintf(logfile,"At line no: %d: unit : var_declation\n\n",line);
 		fprintf(logfile,"%s\n\n",$1->get_name().c_str());
-
 		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      | func_declaration
 	{
 		fprintf(logfile,"At line no: %d: unit : func_declaration\n\n",line);
 		fprintf(logfile,"%s\n\n",$1->get_name().c_str());
-
 		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      | func_definition
 	{
     fprintf(logfile,"At line no: %d: unit : func_definition\n\n",line);
 		fprintf(logfile,"%s\n",$1->get_name().c_str());
-
 		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      ;
@@ -176,6 +206,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
 func_definition : type_specifier ID LPAREN parameter_list RPAREN
   {
+    current_return_type = $1->get_name();
     /* checking whether already declared or not */
 		SymbolInfo* temp = table.Lookup_in_current($2->get_name());
 		if(temp != NULL and (!temp->get_is_declared_func())) {
@@ -201,18 +232,17 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
         }
     }
 
-  } compound_statement {table.printall(logfile); table.Exit_Scope(logfile);}
+  } compound_statement {table.printall(logfile); table.Exit_Scope(logfile);var_list.clear();}
 
   {
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+")"+$7->get_name()+"\n\n", "NON_TERMINAL");
       fprintf(logfile , "At line no %d: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n" , line);
       fprintf(logfile , "%s %s(%s)%s\n\n" , $1->get_name().c_str(),$2->get_name().c_str(),$4->get_name().c_str(),$7->get_name().c_str());
 
-
   }
 		| type_specifier ID LPAREN RPAREN
     {
-
+      current_return_type = $1->get_name();
       /* checking whether already declared or not */
   		SymbolInfo* temp = table.Lookup_in_current($2->get_name());
       if(temp != NULL and (!temp->get_is_declared_func())) {
@@ -226,7 +256,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       table.Enter_Scope(logfile);
 
     }
-    compound_statement {table.printall(logfile);table.Exit_Scope(logfile);}
+    compound_statement {table.printall(logfile);table.Exit_Scope(logfile);var_list.clear();}
  	{
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"()"+$6->get_name()+"\n\n", "NON_TERMINAL");
       fprintf(logfile , "At line no %d: func_definition : type_specifier ID LPAREN RPAREN compound_statement\n\n" , line);
@@ -303,6 +333,8 @@ var_declaration : type_specifier declaration_list SEMICOLON
 			fprintf(logfile,"%s %s;\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 			$$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+";", "NON_TERMINAL");
 
+      $$->setVariableType($1->get_name());
+
       //setting type of all elements of var in declaration_list
       for(int i=0;i<$2->var.size();i++){
           $2->var[i].type = $1->get_name();
@@ -315,19 +347,27 @@ var_declaration : type_specifier declaration_list SEMICOLON
 			}
 			else{
 				/* checking whether already declared or not */
-				for(int i=0;i<var_list.size();i++){
-					SymbolInfo* temp = table.Lookup_in_current(var_list[i].var_name);
+				for(int i=0;i<$2->var.size();i++){
+					SymbolInfo* temp = table.Lookup_in_current($2->var[i].name);
 					if(temp != NULL) {
 						error_cnt++;
-						fprintf(errorfile , "Error at line %d: Multiple declaration of %s" , line , var_list[i].var_name.c_str());
+						fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->var[i].name.c_str());
 					}
 					else{
-						table.Insert(var_list[i].var_name , "ID" , logfile);
+						table.Insert($2->var[i].name , "ID" , logfile);
+            SymbolInfo *tmp = table.Lookup_in_current($2->var[i].name);
+            tmp->setVariableType($1->get_name());
+            if($2->var[i].sz>0){
+              tmp->setIdentity("array");
+            }else{
+              tmp->setIdentity("var");
+            }
 					}
 				}
 
 			}
-			var_list.clear();
+
+			//var_list.clear();
 		}
  		;
 
@@ -367,12 +407,13 @@ declaration_list : declaration_list COMMA ID
 			fprintf(logfile , "%s,%s\n\n" , $1->get_name().c_str() , $3->get_name().c_str());
 
 			/* keeping track of identifier(variable) */
-            temp_var.var_name = $3->get_name();
-            temp_var.var_size = -1;
-            var_list.push_back(temp_var);
+      temp_var.var_name = $3->get_name();
+      temp_var.var_size = -1;
+      var_list.push_back(temp_var);
 
-            $$->push_in_var($3->get_name() , "" , 0);
-
+      /* 3 args are name , type, size of variable */
+      $$->var = $1->var;
+      $$->push_in_var($3->get_name() , "" , 0);
 
 		}
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
@@ -382,16 +423,18 @@ declaration_list : declaration_list COMMA ID
 			fprintf(logfile , "%s,%s[%s]\n\n" , $1->get_name().c_str() , $3->get_name().c_str() , $5->get_name().c_str());
 
 			/* keeping track of identifier(array) */
-            temp_var.var_name = (string)$3->get_name();
-            stringstream temp_str((string) $5->get_name());
-            temp_str >> temp_var.var_size;
-            var_list.pb(temp_var);
+      temp_var.var_name = (string)$3->get_name();
+      stringstream temp_str((string) $5->get_name());
+      temp_str >> temp_var.var_size;
+      var_list.pb(temp_var);
 
-            stringstream geek($5->get_name());
-            int sz = 0;
-            geek >> sz;
+      stringstream geek($5->get_name());
+      int sz = 0;
+      geek >> sz;
 
-            $$->push_in_var($3->get_name() , "" , sz);
+      $$->var = $1->var;
+      $$->push_in_var($3->get_name() , "" , sz);
+
 		}
 
  		  | ID
@@ -402,12 +445,11 @@ declaration_list : declaration_list COMMA ID
  			$$ = new SymbolInfo($1->get_name() ,  "ID");
 
 			 /* keeping track of identifier(variable) */
-            temp_var.var_name = (string)$1->get_name();
-            temp_var.var_size = -1;
-            var_list.pb(temp_var);
+      temp_var.var_name = (string)$1->get_name();
+      temp_var.var_size = -1;
+      var_list.pb(temp_var);
 
-            $$->push_in_var($1->get_name() , "" , 0);
-
+      $$->push_in_var($1->get_name() , "" , 0);
 
 		}
  		| ID LTHIRD CONST_INT RTHIRD
@@ -417,15 +459,15 @@ declaration_list : declaration_list COMMA ID
 			fprintf(logfile , "%s[%s]\n\n",$1->get_name().c_str() , $3->get_name().c_str());
 
 			temp_var.var_name = $1->get_name();
-            stringstream temp_str($3->get_name());
-            temp_str >> temp_var.var_size;
-            var_list.pb(temp_var);
+      stringstream temp_str($3->get_name());
+      temp_str >> temp_var.var_size;
+      var_list.pb(temp_var);
 
-            stringstream geek($3->get_name());
-            int sz = 0;
-            geek >> sz;
+      stringstream geek($3->get_name());
+      int sz = 0;
+      geek >> sz;
 
-            $$->push_in_var($1->get_name() , "" , sz);
+      $$->push_in_var($1->get_name() , "" , sz);
 
 		}
  		  ;
@@ -531,50 +573,40 @@ expression_statement 	: SEMICOLON
     }
 			;
 
-variable : ID
+variable :
+
+    ID
     {
-      $$ = new SymbolInfo($1->get_name() , "variable");
+      //$$ = new SymbolInfo($1->get_name() , "variable");
       fprintf(logfile,"At line no. %d: variable : ID\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
-      /*
-      SymbolInfo *x=table.lookUp($1->getName());
-      if(!x){
-        semanticErr++;
-        fprintf(error,"semantic error found in line %d: variable '%s' not declared in this scope\n\n",line,$1->getName().c_str());
-      }
+      $$ = $1;
+      //Semantic : chk if variable is declared before
 
+      $$->setIdentity("var");
+      $$->push_in_var($1->get_name(),"",0);
+      SymbolInfo *x=table.Lookup($1->get_name());
+      if(!x){
+        error_cnt++;
+        fprintf(errorfile,"Error at line: %d variable '%s' not declared in this scope\n\n",line,$1->get_name().c_str());
+      }
       else{
         $$->setVariableType(x->getVariableType());
       }
-      */
+
     }
+
 	 | ID LTHIRD expression RTHIRD
    {
      fprintf(logfile,"At line no %d: variable : ID LTHIRD expression RTHIRD\n",line);
 		 fprintf(logfile,"%s[%s]\n\n",$1->get_name().c_str(),$3->get_name().c_str());
      $$ = new SymbolInfo($1->get_name()+"["+$3->get_name()+"]" , "variable");
 
-     /*
-     //#semantic: type checking, expression must be int, e.g: a[5.6]
-			if($3->getVariableType()!="int"){
-				semanticErr++;
-				fprintf(error,"semantic error found in line %d: type mismatch, array index must be integer\n\n",line);
-			}
-			//--------------------------------------------------------------------------
+     $$->setIdentity("array");
+     //array index must be integer
 
-			//--------------------------------------------------
-			//#semantic: see if variable has been declared
-			SymbolInfo *x=table.lookUp($1->getName());
-			if(!x){
-				semanticErr++;
-				fprintf(error,"semantic error found in line %d: variable '%s' not declared in this scope\n\n",line,$1->getName().c_str());
-			}
-
-			else{
-				$$->setVariableType(x->getVariableType());
-			}
-     */
    }
+
 	 ;
 
  expression : logic_expression
@@ -589,11 +621,65 @@ variable : ID
       fprintf(logfile,"At line no %d: expression : variable ASSIGNOP logic_expression\n\n",line);
 			fprintf(logfile,"%s = %s\n\n",$1->get_name().c_str(),$3->get_name().c_str());
 
-      /*semantics
+      //semantics
+      //todo
+      //assign $3's variable_type to $1 after some error chkings
 
+      ///pass arrayname if array otherwise pass varname only
+      ///suppose $1->get_name() is a[2].Now modified_name returns only a
+      string varname;
+      varname = modified_name($1->get_name());
+      SymbolInfo *x=table.Lookup(varname);
+			if(x)
+			{
+				//setting type of var(int/float)
+        $1->setVariableType(x->getVariableType());
 
+        //chk if array
+        for(int i=0;i<var_list.size();i++){
+          if(var_list[i].var_name==x->get_name() && var_list[i].var_size>0){
+            //now we're sure that it's an array
+            //let's see if ara is being used without any index
+            if(varname==$1->get_name()){
+              error_cnt++;
+              fprintf(errorfile,"Error at line: %d Type Mismatch\n\n",line);
+              break;
+            }
+            //now chk if wrong index is given
+            else if(!is_ara_idx_valid($1->get_name() , var_list[i].var_size)){
+              error_cnt++;
+              fprintf(errorfile,"Error at line: %d Wrong array index\n\n",line);
+              break;
+            }
+          }
+        }
+
+        //check if float is assigned to int
+        if(x->getVariableType()=="int" && $3->getVariableType()=="float"){
+					error_cnt++;
+          $$->setVariableType("int");
+					fprintf(errorfile,"Error at line %d: type mismatch in assignment \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
+				}
+        else if(x->getVariableType()=="float" && $3->getVariableType()=="int"){
+          $$->setVariableType("float");
+        }
+        else{
+          $$->setVariableType(x->getVariableType());
+        }
+
+        /*#semantic: expression cannot have void return type functions called
+			if(returnType_curr=="void"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: void type function can't be part of expression\n\n",line);
+				returnType_curr="none";
+			}
       */
+			}
 
+			else{
+				error_cnt++;
+				fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,varname.c_str());
+			}
     }
 	   ;
 
@@ -611,9 +697,15 @@ logic_expression : rel_expression
       fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
       /*semantic
-      both $1 and $3 must be of type bool
-      $$ must be set to type bool
+      both $1 and $3 must be of type non void
+      $$ must be set to type int
       */
+      if($1->getVariableType()=="void" || $3->getVariableType()=="void"){
+ 				error_cnt++;
+ 				fprintf(errorfile,"Error at line %d found: Type Mismatch(Operands of %s can't be void)\n\n",line,$2->get_name().c_str());
+ 			}
+
+       $$->setVariableType("int");
     }
 		 ;
 
@@ -631,9 +723,14 @@ rel_expression	: simple_expression
      fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
      /*semantic
-     both $1 and $3 must be of type bool
-     $$ must be set to type bool
+     both $1 and $3 must be of type non void
+     $$ must be set to type int
      */
+     if($1->getVariableType()=="void" || $3->getVariableType()=="void"){
+				error_cnt++;
+				fprintf(errorfile,"Error at line %d found: Type Mismatch(Operands of %s can't be void)\n\n",line,$2->get_name().c_str());
+			}
+      $$->setVariableType("int");
    }
 		;
 
@@ -650,12 +747,10 @@ simple_expression : term
     fprintf(logfile,"At line no %d: simple_expression : simple_expression ADDOP term\n\n",line);
     fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
-    /*semantics
     if($1->getVariableType()=="float" || $3->getVariableType()=="float")
 				$$->setVariableType("float");
 			else
 				$$->setVariableType("int");
-    */
 
   }
 		  ;
@@ -672,15 +767,14 @@ term :	unary_expression
       fprintf(logfile,"At line no %d: term : term MULOP unary_expression\n\n",line);
       fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
-      /*semantic
-      if($2->getName()=="%" && ($1->getVariableType()!="int" || $3->getVariableType()!="int")){
-				semanticErr++;
-				fprintf(error,"semantic error found in line %d: type mismatch, mod operation is only possible with integer operands\n\n",line);
+      //features of mod operation
+      if($2->get_name()=="%" && ($1->getVariableType()!="int" || $3->getVariableType()!="int")){
+				error_cnt++;
+				fprintf(errorfile,"Error at line %d: type mismatch,(mod operation)\n\n",line);
 			}
-			//------------------------------------------------------------------------
 
 			//set variable_type
-			if($2->getName()=="%")
+			if($2->get_name()=="%")
 				$$->setVariableType("int");
 			else
 			{
@@ -689,7 +783,6 @@ term :	unary_expression
 				else
 					$$->setVariableType("int");
 			}
-      */
 
     }
      ;
@@ -701,9 +794,9 @@ unary_expression : ADDOP unary_expression
 
 			$$ = new SymbolInfo($1->get_name()+$2->get_name(),"unary_expression");
 
-			/*semantic
       $$->setVariableType($2->getVariableType());
-      */
+      $$->setIdentity($2->getIdentity());
+
     }
 		 | NOT unary_expression
     {
@@ -711,9 +804,9 @@ unary_expression : ADDOP unary_expression
       fprintf(logfile,"!%s\n\n",$2->get_name().c_str());
 
       $$ = new SymbolInfo("!"+$2->get_name(),"unary_expression");
-      /*semantic
+
       $$->setVariableType($2->getVariableType());
-      */
+      $$->setIdentity($2->getIdentity());
 
     }
 		 | factor
@@ -727,9 +820,42 @@ unary_expression : ADDOP unary_expression
 
 factor	: variable
     {
-      $$ = $1;
       fprintf(logfile,"At line no %d: factor : variable\n\n",line);
       fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+      $$ = $1;
+      ///pass arrayname if array otherwise pass varname only
+      ///suppose $1->get_name() is a[2].Now modified_name returns only a
+      string varname;
+      varname = modified_name($1->get_name());
+      SymbolInfo *x=table.Lookup(varname);
+			if(!x){
+        error_cnt++;
+        fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,varname.c_str());
+      }
+      else{
+
+          //setting type of var(int/float) and identity(array/normal variable)
+  				$$->setVariableType(x->getVariableType());
+          $$->setIdentity(x->getIdentity());
+          //chk if array
+          for(int i=0;i<var_list.size();i++){
+            if(var_list[i].var_name==x->get_name() && var_list[i].var_size>0){
+              //now we're sure that it's an array
+              //let's see if ara is being used without any index
+              if(varname==$1->get_name()){
+                error_cnt++;
+                fprintf(errorfile,"Error at line: %d Type Mismatch\n\n",line);
+                break;
+              }
+              //now chk if wrong index is given
+              else if(!is_ara_idx_valid($1->get_name() , var_list[i].var_size)){
+                error_cnt++;
+                fprintf(errorfile,"Error at line: %d Wrong array index\n\n",line);
+                break;
+              }
+            }
+          }
+      }
 
     }
 	| ID LPAREN argument_list RPAREN
@@ -749,9 +875,7 @@ factor	: variable
       fprintf(logfile,"At line no %d: factor : LPAREN expression RPAREN\n\n",line);
       fprintf(logfile,"(%s)\n\n",$2->get_name().c_str());
 
-      /*semantic
       $$->setVariableType($2->getVariableType());
-      */
 
     }
 	| CONST_INT
@@ -759,39 +883,51 @@ factor	: variable
       fprintf(logfile,"At line no %d: factor : CONST_INT\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 			$$=$1;
-      /*semantic
 			$$->setVariableType("int");
-      */
+
     }
 	| CONST_FLOAT
     {
-      fprintf(logfile,"At line no %d: factor : CONST_INT\n\n",line);
+      fprintf(logfile,"At line no %d: factor : CONST_FLOAT\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 			$$=$1;
-      /*semantic
 			$$->setVariableType("float");
-      */
+
     }
 	| variable INCOP
     {
       fprintf(logfile,"At line no %d: factor	: variable INCOP\n\n",line);
 			fprintf(logfile,"%s++\n\n",$1->get_name().c_str());
-			$$ = new SymbolInfo($1->get_name()+"++","factor");
+      $$ = new SymbolInfo($1->get_name()+"++","factor");
 
-      /*semantic
-			$$->setVariableType($1->getVariableType());
-      */
+      SymbolInfo *x=table.Lookup($1->get_name());
+			if(!x){
+        error_cnt++;
+        fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
+      }
+      else{
+
+         $$->setVariableType($1->getVariableType());
+         $$->setIdentity($1->getIdentity());
+      }
+
     }
 	| variable DECOP
     {
       fprintf(logfile,"At line no %d: factor	: variable DECOP\n\n",line);
 			fprintf(logfile,"%s--\n\n",$1->get_name().c_str());
-			$$ = new SymbolInfo($1->get_name()+"--","factor");
+      $$ = new SymbolInfo($1->get_name()+"--","factor");
 
-      /*semantic
-      $$->setVariableType($1->getVariableType());
-      */
+      SymbolInfo *x=table.Lookup($1->get_name());
+			if(!x){
+        error_cnt++;
+        fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
+      }
+      else{
 
+         $$->setVariableType($1->getVariableType());
+         $$->setIdentity($1->getIdentity());
+      }
     }
 	;
 

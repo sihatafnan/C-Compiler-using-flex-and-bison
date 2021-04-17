@@ -9,6 +9,6 @@ echo 'Generated the scanner C file'
 g++ -w -c -o l.o lex.yy.c
 # if the above command doesn't work try g++ -fpermissive -w -c -o l.o lex.yy.c
 echo 'Generated the scanner object file'
-g++ y.o l.o -ll 
+g++ y.o l.o -ll
 echo 'All ready, running'
 ./a.out input.txt

@@ -1,3 +1,19 @@
+Error at line 6: Multiple declaration of c
 
-Total Errors : 0 
+Error at line: 7 Wrong array index
+
+Error at line 8: type mismatch in assignment 
+
+Error at line 9: type mismatch,(mod operation)
+
+Error at line: 10 Type Mismatch
+
+Error at line: 11 Type Mismatch
+
+Error at line: 12 variable 'b' not declared in this scope
+
+Error at line 12: variable b not declared in this scope
+
+
+Total Errors : 8 
 

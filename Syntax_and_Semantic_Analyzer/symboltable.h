@@ -16,11 +16,6 @@ using namespace std;
 #define _(x) {cout << #x << " = " << x << " ";}
 #define FastIO ios::sync_with_stdio(false); cin.tie(0);cout.tie(0)
 
-// #define logfile freopen("1705098_log.txt","w+",stdout)
-//FILE *logfile_ = fopen("log.txt","w");
-
-
-
 typedef long long ll;
 typedef long double ld;
 typedef double db;
@@ -50,12 +45,11 @@ class SymbolInfo{
     string name;
     string type;
     string return_type,variable_type,identity;
-    bool is_declared_func;
+    bool is_declared_func;// to keep track of declared function and verify if they are defined later
     SymbolInfo* next;
 public:
     vector<parameter>param;
     vector<variable>var;
-
 
     void set_is_declared_func(bool state){
       is_declared_func = state;
@@ -107,6 +101,9 @@ public:
     SymbolInfo(string nm,string tp){
         name = nm;
         type = tp;
+        return_type = "";
+        variable_type = "";
+        identity = "";
         is_declared_func = false;
         next = nullptr;
     }
