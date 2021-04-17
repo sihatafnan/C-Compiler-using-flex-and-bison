@@ -30,15 +30,21 @@ typedef map<int,int> mii;
 const int maxn=1010;
 const int INF = 1e5+10;
 
-struct parameter {
+struct parameter {//mainly for function parameters when $$ holds a function.See parameter_list in parser.y
     string param_type;
     string param_name;  //set to empty string "" for function declaration
 } ;
 
-struct variable{
+struct variable{ //when $$ is a declaration_list,vector<var>var holds the variables
     string name;
     string type;
     int sz;
+};
+
+struct arg_{
+  string name;
+  string type;
+  int sz; ///to chk if its array.ifsz>0 its array
 };
 
 class SymbolInfo{
@@ -46,10 +52,12 @@ class SymbolInfo{
     string type;
     string return_type,variable_type,identity;
     bool is_declared_func;// to keep track of declared function and verify if they are defined later
+    bool is_func;//to chk (at time of function calling) if $$ is really a function(see 2nd rule of factor)
     SymbolInfo* next;
 public:
     vector<parameter>param;
     vector<variable>var;
+    vector<arg_>arg_list;
 
     void set_is_declared_func(bool state){
       is_declared_func = state;
@@ -57,6 +65,14 @@ public:
 
     bool get_is_declared_func(){
       return is_declared_func;
+    }
+
+    bool get_is_func(){
+      return is_func;
+    }
+
+    void  set_is_func(bool state) {
+      is_func = state;
     }
 
     void push_in_param(string nm , string tp){
@@ -72,6 +88,14 @@ public:
         temp_var.name = nm;
         temp_var.sz = n;
         var.pb(temp_var);
+    }
+
+    void push_in_arg(string nm , string tp , int n){
+        arg_ temp_arg;
+        temp_arg.type = tp;
+        temp_arg.name = nm;
+        temp_arg.sz = n;
+        arg_list.pb(temp_arg);
     }
 
     string getReturnType() {
