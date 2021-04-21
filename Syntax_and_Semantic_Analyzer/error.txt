@@ -1,3 +1,43 @@
+Error at line 20: parameter 'a' already declared before
 
-Total Errors : 0 
+Error at line: 24 Type Mismatch (previously declared but not being defined properly now)
+
+Error at line 28: Multiple definition of z
+
+Error at line: 32 Type Mismatch (previously declared but not being defined properly now)
+
+Error at line 42: variable cannot be of type void
+
+Error at line 43: Multiple declaration of a
+
+Error at line 43: Multiple declaration of c
+
+Error at line: 45 Total number of arguments mismatch in function func
+
+Error at line: 48 c is an array
+
+Error at line: 49 Total number of arguments mismatch in function correct_foo
+
+Error at line 51: variable k not declared in this scope
+
+Error at line: 52 b is not an array
+
+Error at line: 53 Wrong array index(Expression inside third brackets not an integer)
+
+Error at line 54: Void function used in expression
+
+Error at line: 57 Void function used in expression
+
+Error at line 58: type mismatch in assignment 
+
+Error at line 59: Modulus by Zero
+
+Error at line 60: Non-Integer operand on modulus operator
+
+Error at line: 62 Undeclared Function foo5
+
+Error at line: 67 Undeclared Variable h
+
+
+Total Errors : 20 
 

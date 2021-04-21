@@ -45,12 +45,14 @@ struct arg_{
   string name;
   string type;
   int sz; ///to chk if its array.ifsz>0 its array
+  bool already_error_in_arg;
 };
 
 class SymbolInfo{
     string name;
     string type;
     string return_type,variable_type,identity;
+    bool already_error_in_param;//only if $$ is parameter_list.It is set if parameter_list has some error .For ex: array name c is used instead of c[0] or c[1]
     bool is_declared_func;// to keep track of declared function and verify if they are defined later
     bool is_func;//to chk (at time of function calling) if $$ is really a function(see 2nd rule of factor)
     SymbolInfo* next;
@@ -58,6 +60,14 @@ public:
     vector<parameter>param;
     vector<variable>var;
     vector<arg_>arg_list;
+
+    void set_already_error_in_param(){
+      already_error_in_param = true;
+    }
+
+    bool get_already_error_in_param(){
+      return already_error_in_param;
+    }
 
     void set_is_declared_func(bool state){
       is_declared_func = state;
@@ -95,6 +105,16 @@ public:
         temp_arg.type = tp;
         temp_arg.name = nm;
         temp_arg.sz = n;
+        temp_arg.already_error_in_arg =  false;
+        arg_list.pb(temp_arg);
+    }
+
+    void push_in_arg_AR(string nm , string tp , int n){
+        arg_ temp_arg;
+        temp_arg.type = tp;
+        temp_arg.name = nm;
+        temp_arg.sz = n;
+        temp_arg.already_error_in_arg =  true;
         arg_list.pb(temp_arg);
     }
 

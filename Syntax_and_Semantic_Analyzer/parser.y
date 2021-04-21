@@ -55,6 +55,7 @@ void insert_in_func_list(string nm , vector<parameter>& p , string ret_type){
         temp_func.params.pb(mp(p[i].param_type , p[i].param_name));
     }
     func_list.pb(temp_func);
+    temp_func.params.clear();
 }
 
 //in case no parameter in a function
@@ -118,6 +119,20 @@ string modified_name(string str){
   return str;
 }
 
+string modified_name_while_func_calling(string str){
+  //str :- foo(4,5.6) and we need to return foo
+  string done="";
+  for(int i=0;i<str.size();i++){
+
+    if(str[i]!='('){
+      done+=str[i];
+    }else{
+      return done;
+    }
+  }
+  return str;
+}
+
 bool is_ara_idx_valid(string nm , int sz){
   //nm = a[4] , sz = 5 ; so returns true
   //float idx by default handled yet;
@@ -126,6 +141,7 @@ bool is_ara_idx_valid(string nm , int sz){
     if(nm[i]=='['){
       i++;
       while(nm[i]!=']'){
+        if(nm[i]=='.')return false;
         idx += nm[i];
         i++;
       }
@@ -271,14 +287,17 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       }
       else {
         bool matched = true;
-        if(f.params.size() != $4->arg_list.size())matched = false;
-        else{
+        int n = $4->param.size();
+        if(n == f.params.size()){
           for(int i=0;i<f.params.size();i++){
-            if(f.params[i].first != $4->arg_list[i].type){
+            if(f.params[i].first != $4->param[i].param_type){
               matched = false;
               break;
             }
           }
+        }
+        else{
+          matched = false;
         }
         if(!matched){
           error_cnt++;
@@ -626,7 +645,21 @@ statement : var_declaration
     {
       $$ = new SymbolInfo("printf("+$3->get_name()+");" , "statement");
       fprintf(logfile,"At line no: %d statement : PRINTLN LPAREN ID RPAREN SEMICOLON\n\n",line);
-      fprintf(logfile , "printf(%s);" , $3->get_name().c_str());
+      fprintf(logfile , "printf(%s);\n\n" , $3->get_name().c_str());
+
+      if($3->get_is_func()){
+        if(!table.Lookup_in_current(modified_name_while_func_calling($3->get_name()))){
+          error_cnt++;
+          fprintf(errorfile , "Error at line: %d Undeclared function %s\n\n" , line,modified_name_while_func_calling($3->get_name()).c_str());
+          fprintf(logfile , "Error at line: %d Undeclared function %s\n\n" , line,modified_name_while_func_calling($3->get_name()).c_str());
+        }
+      }
+
+      else if(!table.Lookup_in_current($3->get_name())){
+        error_cnt++;
+        fprintf(errorfile , "Error at line: %d Undeclared Variable %s\n\n" , line,$3->get_name().c_str());
+        fprintf(logfile , "Error at line: %d Undeclared Variable %s\n\n" , line,$3->get_name().c_str());
+      }
     }
 	  | RETURN expression SEMICOLON
     {
@@ -666,10 +699,13 @@ variable :
       $$ = $1;
       //Semantic : chk if variable is declared before
 
+
       $$->setIdentity("var");
       $$->push_in_var($1->get_name(),"",0);
       SymbolInfo *x=table.Lookup($1->get_name());
       if(x)$$->setVariableType(x->getVariableType());
+
+
 /*
       if(!x){
         error_cnt++;
@@ -720,6 +756,19 @@ variable :
 				//setting type of var(int/float)
         $1->setVariableType(x->getVariableType());
 
+        //chk if variable and written with index
+        bool isvar=true;
+        for(int i=0;i<var_list.size();i++){
+          if(var_list[i].var_name==x->get_name() && var_list[i].var_size>0){
+            isvar = false;break;
+         }
+        }
+        if(isvar){
+          if(varname != $1->get_name()){
+            error_cnt++;
+            fprintf(errorfile , "Error at line: %d %s is not an array\n\n" , line,varname.c_str());
+          }
+        }
         //chk if array
         for(int i=0;i<var_list.size();i++){
           if(var_list[i].var_name==x->get_name() && var_list[i].var_size>0){
@@ -729,11 +778,13 @@ variable :
               error_cnt++;
               fprintf(errorfile,"Error at line: %d Type Mismatch\n\n",line);
               break;
+
             }
             //now chk if wrong index is given
+
             else if(!is_ara_idx_valid($1->get_name() , var_list[i].var_size)){
               error_cnt++;
-              fprintf(errorfile,"Error at line: %d Wrong array index\n\n",line);
+              fprintf(errorfile,"Error at line: %d Wrong array index(Expression inside third brackets not an integer)\n\n",line);
               break;
             }
           }
@@ -752,33 +803,22 @@ variable :
           $$->setVariableType(x->getVariableType());
         }
 
-        /*#semantic: expression cannot have void return type functions called
-			if(returnType_curr=="void"){
-				semanticErr++;
-				fprintf(error,"semantic error found in line %d: void type function can't be part of expression\n\n",line);
-				returnType_curr="none";
-			}
-      */
 
       if($3->get_is_func()){
         ///extract function name cause $3 has name like foo(6) but we need only foo
-        string fnm="";string str = $3->get_name();
-        int i=0;
-        while(str[i]!='('){
-          fnm += str[i];
-          i++;
-        }
+        string fnm = modified_name_while_func_calling($3->get_name());
+        if(is_in_func_list(fnm)){
+          function_ f = get_func(fnm);
+          ///chk if func is returning to valid type
 
-        function_ f = get_func(fnm);
-        ///chk if func is returning to valid type
-
-        if(f.return_type=="void"){
-          error_cnt++;
-          fprintf(errorfile , "Error at line: %d Type Mismatch(Void return_type but function returning!)\n\n");
-        }
-        else if(f.return_type != $1->getVariableType()){
-          error_cnt++;
-          fprintf(errorfile , "Error at line: %d Type Mismatch in function returning\n\n",line);
+          if(f.return_type=="void"){
+            error_cnt++;
+            fprintf(errorfile , "Error at line: %d Void function used in expression\n\n",line);
+          }
+          else if(f.return_type != $1->getVariableType()){
+            error_cnt++;
+            fprintf(errorfile , "Error at line: %d Type Mismatch in function returning\n\n",line);
+          }
         }
       }
 
@@ -875,12 +915,28 @@ term :	unary_expression
       fprintf(logfile,"At line no: %d term : term MULOP unary_expression\n\n",line);
       fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
+      //if $3 is void type function
+      string fn = modified_name_while_func_calling($3->get_name());
+      if(is_in_func_list(fn)){
+        function_ f = get_func(fn);
+        if(f.return_type=="void"){
+          error_cnt++;
+          fprintf(errorfile , "Error at line %d: Void function used in expression\n\n",line);
+          fprintf(logfile , "Error at line %d: Void function used in expression\n\n",line);
+        }
+      }
       //features of mod operation
       if($2->get_name()=="%" && ($1->getVariableType()!="int" || $3->getVariableType()!="int")){
 				error_cnt++;
-				fprintf(errorfile,"Error at line %d: Type Mismatch(mod operation)\n\n",line);
+				fprintf(errorfile,"Error at line %d: Non-Integer operand on modulus operator\n\n",line);
+        fprintf(logfile,"Error at line %d: Non-Integer operand on modulus operator\n\n",line);
 			}
-
+      //mod by zero
+      else if($2->get_name()=="%" && $3->get_name()=="0"){
+				error_cnt++;
+				fprintf(errorfile,"Error at line %d: Modulus by Zero\n\n",line);
+        fprintf(logfile,"Error at line %d: Modulus by Zero\n\n",line);
+			}
 			//set variable_type
 			if($2->get_name()=="%")
 				$$->setVariableType("int");
@@ -897,6 +953,17 @@ term :	unary_expression
 
 unary_expression : ADDOP unary_expression
     {
+      //if $3 is void type function
+      string fn = modified_name_while_func_calling($2->get_name());
+      if(is_in_func_list(fn)){
+        function_ f = get_func(fn);
+        if(f.return_type=="void"){
+          error_cnt++;
+          fprintf(errorfile , "Error at line %d: Void function used in expression\n\n",line);
+          fprintf(logfile , "Error at line %d: Void function used in expression\n\n",line);
+        }
+      }
+
       fprintf(logfile,"At line no: %d unary_expression : ADDOP unary_expression\n",line);
 			fprintf(logfile,"%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 
@@ -952,7 +1019,9 @@ factor	: variable
               //let's see if ara is being used without any index
               if(varname==$1->get_name()){
                 error_cnt++;
-                fprintf(errorfile,"Error at line: %d Type Mismatch\n\n",line);
+                fprintf(errorfile,"Error at line: %d %s is an array\n\n",line,varname.c_str());
+                fprintf(logfile,"Error at line: %d %s is an array\n\n",line,varname.c_str());
+                $$->set_already_error_in_param();
                 break;
               }
               //now chk if wrong index is given
@@ -972,29 +1041,43 @@ factor	: variable
       fprintf(logfile,"At line no: %d factor : ID LPAREN argument_list RPAREN\n\n",line);
       fprintf(logfile,"%s(%s)\n\n",$1->get_name().c_str(),$3->get_name().c_str());
       $$->set_is_func(true);
+
       //semantic
       //chk if id is in func_list
       if(!is_in_func_list($1->get_name())){
         error_cnt++;
-        fprintf(errorfile , "Error at line: %d Function %s not declared before\n\n",line,$1->get_name().c_str());
+        fprintf(errorfile , "Error at line: %d Undeclared Function %s\n\n",line,$1->get_name().c_str());
       }
       else{
         function_ f = get_func($1->get_name());
         //chk args consistency
-        //cout<<f.params[0].second<<" "<<$3->arg_list[0].name<<endl;
         bool matched = true;
+        bool already_error_in_arg = false;
         if(f.params.size() != $3->arg_list.size())matched = false;
         else{
           for(int i=0;i<f.params.size();i++){
+            if($3->arg_list[i].already_error_in_arg){
+              already_error_in_arg = true;
+              break;
+            }
+            //cout<<f.f_name<<" "<<$3->arg_list[i].name<<" "<<$3->arg_list[i].sz<<endl;
+            if($3->arg_list[i].sz>0){
+              if($3->get_name()==modified_name($3->get_name())){
+                matched = false;
+                break;
+              }
+            }
             if(f.params[i].first != $3->arg_list[i].type){
               matched = false;
               break;
             }
           }
         }
-        if(!matched){
+        cout<<$1->get_name()<<" "<<already_error_in_arg<<endl;
+        if(!matched && !already_error_in_arg){
+          //
           error_cnt++;
-          fprintf(errorfile , "Error at line: %d Type Mismatch in Function parameters\n\n",line);
+          fprintf(errorfile , "Error at line: %d Total number of arguments mismatch in function %s\n\n",line,$1->get_name().c_str());
         }
       }
 
@@ -1030,7 +1113,7 @@ factor	: variable
 			fprintf(logfile,"%s++\n\n",$1->get_name().c_str());
       $$ = new SymbolInfo($1->get_name()+"++","factor");
 
-      SymbolInfo *x=table.Lookup($1->get_name());
+      SymbolInfo *x=table.Lookup(modified_name($1->get_name()));
 			if(!x){
         error_cnt++;
         fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
@@ -1048,7 +1131,7 @@ factor	: variable
 			fprintf(logfile,"%s--\n\n",$1->get_name().c_str());
       $$ = new SymbolInfo($1->get_name()+"--","factor");
 
-      SymbolInfo *x=table.Lookup($1->get_name());
+      SymbolInfo *x=table.Lookup(modified_name($1->get_name()));
 			if(!x){
         error_cnt++;
         fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
@@ -1080,7 +1163,19 @@ arguments : arguments COMMA logic_expression
           fprintf(logfile,"%s , %s\n\n",$1->get_name().c_str(),$3->get_name().c_str());
 
           $$->arg_list = $1->arg_list;
-          $$->push_in_arg($3->get_name() , $3->getVariableType() , 0);
+          bool isara=false;
+          for(int i=0;i<var_list.size();i++){
+            if($3->get_name()==var_list[i].var_name && var_list[i].var_size>0){
+                isara = true;
+                if($3->get_already_error_in_param()){
+                  $$->push_in_arg_AR($3->get_name() , $3->getVariableType() , var_list[i].var_size);break;
+                }
+                else $$->push_in_arg($3->get_name() , $3->getVariableType() , var_list[i].var_size);break;
+            }
+          }
+          if(!isara){
+            $$->push_in_arg($3->get_name() , $3->getVariableType() , 0);
+          }
 
         }
 	      | logic_expression
@@ -1088,10 +1183,21 @@ arguments : arguments COMMA logic_expression
           fprintf(logfile,"At line no: %d arguments : logic_expression\n\n",line);
     			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     			$$=$1;
-
-          $$->push_in_arg($1->get_name() , $1->getVariableType() , 0);
-
+          bool isara=false;
+          for(int i=0;i<var_list.size();i++){
+            if($1->get_name()==var_list[i].var_name && var_list[i].var_size>0){
+              isara = true;
+              if($1->get_already_error_in_param()){
+                $$->push_in_arg_AR($1->get_name() , $1->getVariableType() , var_list[i].var_size);break;
+              }
+              else $$->push_in_arg($1->get_name() , $1->getVariableType() , var_list[i].var_size);break;
+            }
+          }
+          if(!isara){
+            $$->push_in_arg($1->get_name() , $1->getVariableType() , 0);
+          }
         }
+
 	      ;
 
 

@@ -38,16 +38,16 @@ void foo4(int a){
 }
 
 int main(){
-	int a,b,c[4],dd,ee;
+	int a,b,c[4],dd,ee;	
 	void e;
 	float a,c[7];
-
+	
 	func(2.5,3.5);
-
-
+	
+	
 	a = correct_foo(a,c);
 	b = correct_foo(a);
-
+	
 	k = 5+2;
 	b[5] = 7;
 	c[2.5] = 8;
@@ -58,14 +58,14 @@ int main(){
 	c[3] = 2.7;
 	b = 5%0;
 	b = 2%3.5;
-
+	
 	dd = foo5(a);
-
-
-
-
+	
+	
+	
+	
 	printf(h);
 	return 0;
-
-
+	
+	
 }
