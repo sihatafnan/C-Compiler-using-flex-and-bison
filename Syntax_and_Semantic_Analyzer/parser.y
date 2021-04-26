@@ -180,7 +180,7 @@ void yyerror(char *s)
 %token<symbol>RELOP
 %token<symbol>LOGICOP
 
-%type<symbol>compound_statement type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term func_definition program
+%type<symbol>compound_statement error type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term func_definition program SE_1
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 
@@ -471,6 +471,12 @@ var_declaration : type_specifier declaration_list SEMICOLON
 
 			//var_list.clear();
 		}
+    |
+    error SEMICOLON
+    {
+      //`cout<<"error paisi"<<endl;
+      yyerrok;
+    }
  		;
 
 type_specifier	: INT
@@ -1199,6 +1205,25 @@ arguments : arguments COMMA logic_expression
         }
 
 	      ;
+
+SE_1 : error
+      {
+        yyerrok;
+        error_cnt++;
+      //  fprintf(errorfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
+        //fprintf(logfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
+        //$$ = new SymbolInfo($1->get_name()+$2->get_name() , "SE_1");
+      }
+      |
+
+      type_specifier MULOP
+      {
+        error_cnt++;
+        fprintf(errorfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
+        fprintf(logfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
+        $$ = new SymbolInfo($1->get_name()+$2->get_name() , "SE_1");
+      }
+
 
 
 %%

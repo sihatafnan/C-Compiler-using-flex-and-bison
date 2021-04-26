@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.5.1.  */
+/* A Bison parser, made by GNU Bison 3.7.5.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -31,8 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
 
 #ifndef YY_YY_Y_TAB_H_INCLUDED
 # define YY_YY_Y_TAB_H_INCLUDED
@@ -44,52 +45,61 @@
 extern int yydebug;
 #endif
 
-/* Token type.  */
+/* Token kinds.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    IF = 258,
-    ELSE = 259,
-    FOR = 260,
-    WHILE = 261,
-    DO = 262,
-    BREAK = 263,
-    INT = 264,
-    CHAR = 265,
-    FLOAT = 266,
-    DOUBLE = 267,
-    VOID = 268,
-    RETURN = 269,
-    SWITCH = 270,
-    CASE = 271,
-    DEFAULT = 272,
-    CONTINUE = 273,
-    ASSIGNOP = 274,
-    INCOP = 275,
-    DECOP = 276,
-    NOT = 277,
-    LPAREN = 278,
-    RPAREN = 279,
-    LCURL = 280,
-    RCURL = 281,
-    LTHIRD = 282,
-    RTHIRD = 283,
-    COMMA = 284,
-    SEMICOLON = 285,
-    PRINTLN = 286,
-    CONST_INT = 287,
-    CONST_FLOAT = 288,
-    CONST_CHAR = 289,
-    ID = 290,
-    ADDOP = 291,
-    MULOP = 292,
-    RELOP = 293,
-    LOGICOP = 294,
-    LOWER_THAN_ELSE = 295
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    IF = 258,                      /* IF  */
+    ELSE = 259,                    /* ELSE  */
+    FOR = 260,                     /* FOR  */
+    WHILE = 261,                   /* WHILE  */
+    DO = 262,                      /* DO  */
+    BREAK = 263,                   /* BREAK  */
+    INT = 264,                     /* INT  */
+    CHAR = 265,                    /* CHAR  */
+    FLOAT = 266,                   /* FLOAT  */
+    DOUBLE = 267,                  /* DOUBLE  */
+    VOID = 268,                    /* VOID  */
+    RETURN = 269,                  /* RETURN  */
+    SWITCH = 270,                  /* SWITCH  */
+    CASE = 271,                    /* CASE  */
+    DEFAULT = 272,                 /* DEFAULT  */
+    CONTINUE = 273,                /* CONTINUE  */
+    ASSIGNOP = 274,                /* ASSIGNOP  */
+    INCOP = 275,                   /* INCOP  */
+    DECOP = 276,                   /* DECOP  */
+    NOT = 277,                     /* NOT  */
+    LPAREN = 278,                  /* LPAREN  */
+    RPAREN = 279,                  /* RPAREN  */
+    LCURL = 280,                   /* LCURL  */
+    RCURL = 281,                   /* RCURL  */
+    LTHIRD = 282,                  /* LTHIRD  */
+    RTHIRD = 283,                  /* RTHIRD  */
+    COMMA = 284,                   /* COMMA  */
+    SEMICOLON = 285,               /* SEMICOLON  */
+    PRINTLN = 286,                 /* PRINTLN  */
+    CONST_INT = 287,               /* CONST_INT  */
+    CONST_FLOAT = 288,             /* CONST_FLOAT  */
+    CONST_CHAR = 289,              /* CONST_CHAR  */
+    ID = 290,                      /* ID  */
+    ADDOP = 291,                   /* ADDOP  */
+    MULOP = 292,                   /* MULOP  */
+    RELOP = 293,                   /* RELOP  */
+    LOGICOP = 294,                 /* LOGICOP  */
+    LOWER_THAN_ELSE = 295          /* LOWER_THAN_ELSE  */
   };
+  typedef enum yytokentype yytoken_kind_t;
 #endif
-/* Tokens.  */
+/* Token kinds.  */
+#define YYEMPTY -2
+#define YYEOF 0
+#define YYerror 256
+#define YYUNDEF 257
 #define IF 258
 #define ELSE 259
 #define FOR 260
@@ -137,7 +147,7 @@ union YYSTYPE
 
      SymbolInfo *symbol;
 
-#line 141 "y.tab.h"
+#line 151 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
