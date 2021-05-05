@@ -451,7 +451,7 @@ public:
         if(!Scopes.empty()){
             new_scopetable = new ScopeTable(n , current_id  , Scopes.top());
             //cout<<"New ScopeTable with id "<<current_id<<" created"<<endl;
-            fprintf(logfile_, "New ScopeTable with id %s created\n", current_id.c_str());
+            fprintf(logfile_, "New ScopeTable with id %s created\n\n", current_id.c_str());
         }
         else{
             new_scopetable = new ScopeTable(n, current_id , NULL);
@@ -481,7 +481,7 @@ public:
         del_recent_scope = Scopes.top()->get_id();
         Scopes.pop();
         //cout<<"ScopeTable with id "<<current_id<<" removed"<<endl;
-        fprintf(logfile_, "ScopeTable with id %s removed\n", current_id.c_str());
+        fprintf(logfile_, "ScopeTable with id %s removed\n\n", current_id.c_str());
         current=Scopes.top();
         current_id = current->get_id();
     }

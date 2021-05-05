@@ -1457,14 +1457,15 @@ YY_RULE_SETUP
 {
 	error_cnt++;
 	fprintf(errorfile,"Error at line. %d: Unrecgnized character %s\n\n",line,yytext);
+  fprintf(logfile,"Error at line. %d: Unrecgnized character %s\n\n",line,yytext);
 }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 455 "scanner.l"
+#line 456 "scanner.l"
 ECHO;
 	YY_BREAK
-#line 1468 "lex.yy.c"
+#line 1469 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2469,6 +2470,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 455 "scanner.l"
+#line 456 "scanner.l"
 
 

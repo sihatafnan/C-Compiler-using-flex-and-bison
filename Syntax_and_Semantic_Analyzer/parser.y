@@ -157,7 +157,9 @@ bool is_ara_idx_valid(string nm , int sz){
 void yyerror(char *s)
 {
 	//write your code
-	fprintf(stderr,"Line no %d : %s\n",line,s);
+  error_cnt++;
+	fprintf(logfile,"Error at Line no %d : %s\n\n",line,s);
+  fprintf(errorfile,"Error at Line no %d : %s\n\n",line,s);
 }
 
 
@@ -180,7 +182,7 @@ void yyerror(char *s)
 %token<symbol>RELOP
 %token<symbol>LOGICOP
 
-%type<symbol>compound_statement error type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term func_definition program SE_1
+%type<symbol>compound_statement type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term func_definition program
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 
@@ -276,6 +278,12 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
 func_definition : type_specifier ID LPAREN parameter_list RPAREN
   {
+    //chking if invalid params given
+    if($4->get_name()=="int" or $4->get_name()=="float"){
+      error_cnt++;
+      fprintf(logfile , "Error at line %d: 1th parameter's name not given in function definition of var\n\n" , line);
+      fprintf(errorfile , "Error at line %d: 1th parameter's name not given in function definition of var\n\n" , line);
+    }
     //chking if declared previously and now being defined
     //param types,return type must be matched
     //assuming we don't need to handle function overloading
@@ -366,6 +374,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       fprintf(logfile , "%s %s()%s\n\n" , $1->get_name().c_str(),$2->get_name().c_str(),$6->get_name().c_str());
 
 	}
+
 	 	;
 
 
@@ -410,6 +419,17 @@ parameter_list  : parameter_list COMMA type_specifier ID
 
 			$$->push_in_param( "" , $1->get_name());
 		}
+    | type_specifier error
+    {
+      yyclearin;
+      yyerrok;
+      //error_cnt++;
+      //fprintf(logfile , "Error at line %d: syntax error\n\n" , line);
+      //fprintf(logfile , "Error at line %d: Error in function parameter\n\n" , line);
+      //fprintf(errorfile , "Error at line %d: syntax error\n\n" , line);
+      //fprintf(errorfile , "Error at line %d: Error in function parameter\n\n" , line);
+
+    }
  		;
 
 
@@ -578,6 +598,15 @@ declaration_list : declaration_list COMMA ID
       $$->push_in_var($1->get_name() , "" , sz);
 
 		}
+    | declaration_list error
+    {
+      //error_cnt++;
+      yyclearin;
+      //yyerrok;
+      //fprintf(logfile , "Error at line %d: Syntax Error\n\n" , line);
+      //fprintf(errorfile , "Error at line %d: Syntax Error\n\n" , line);
+    }
+
  		  ;
 
 statements : statement
@@ -692,6 +721,13 @@ expression_statement 	: SEMICOLON
       fprintf(logfile,"At line no: %d expression_statement : expression SEMICOLON\n\n",line);
       fprintf(logfile , "%s;\n\n" , $1->get_name().c_str());
 
+    }
+    | expression error
+    {
+      //error_cnt++;
+      yyclearin;
+      //fprintf(logfile , "Error at line %d: Syntax error\n\n" , line);
+      //fprintf(errorfile , "Error at line %d: Syntax error\n\n" , line);
     }
 			;
 
@@ -1205,25 +1241,6 @@ arguments : arguments COMMA logic_expression
         }
 
 	      ;
-
-SE_1 : error
-      {
-        yyerrok;
-        error_cnt++;
-      //  fprintf(errorfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
-        //fprintf(logfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
-        //$$ = new SymbolInfo($1->get_name()+$2->get_name() , "SE_1");
-      }
-      |
-
-      type_specifier MULOP
-      {
-        error_cnt++;
-        fprintf(errorfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
-        fprintf(logfile , "Errro at line: %d %s\n\n",line,$1->get_name()+$2->get_name().c_str());
-        $$ = new SymbolInfo($1->get_name()+$2->get_name() , "SE_1");
-      }
-
 
 
 %%

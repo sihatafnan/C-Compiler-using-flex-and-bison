@@ -450,6 +450,7 @@ UNFINISHED_COMMENT "/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT
 [^\n] {
 	error_cnt++;
 	fprintf(errorfile,"Error at line. %d: Unrecgnized character %s\n\n",line,yytext);
+  fprintf(logfile,"Error at line. %d: Unrecgnized character %s\n\n",line,yytext);
 }
 
 %%

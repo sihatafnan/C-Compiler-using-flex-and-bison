@@ -1,3 +1,13 @@
+Line no 3 : syntax error
 
-Total Errors : 0 
+Error at line 3: 1th parameter's name not given in function definition of var
+
+Line no 8 : syntax error
+
+Line no 9 : syntax error
+
+Error at line. 10: Unrecgnized character #
+
+
+Total Errors : 5 
 
