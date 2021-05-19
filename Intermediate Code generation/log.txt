@@ -1,0 +1,21 @@
+New ScopeTable with id 1.1 created
+
+ScopeTable # 1.1
+7 --> < a : ID >
+8 --> < b : ID >
+9 --> < c : ID >
+
+ScopeTable # 1
+1 --> < main : ID >
+
+ScopeTable with id 1.1 removed
+
+		Symbol Table : 
+
+ScopeTable # 1
+1 --> < main : ID >
+
+Total Lines : 13 
+
+Total Errors : 0 
+
