@@ -158,8 +158,8 @@ void yyerror(char *s)
 {
 	//write your code
   error_cnt++;
-	fprintf(logfile,"Error at Line no %d : %s\n\n",line,s);
-  fprintf(errorfile,"Error at Line no %d : %s\n\n",line,s);
+	fprintf(logfile,"Error at line %d: %s\n\n",line,s);
+  fprintf(errorfile,"Error at line %d: %s\n\n",line,s);
 }
 
 
@@ -196,14 +196,14 @@ start : program
 
 program : program unit
 	{
-		fprintf(logfile,"At line no: %d  program : program unit\n\n",line);
+		fprintf(logfile,"Line %d:  program : program unit\n\n",line);
 		SymbolInfo *x = new SymbolInfo((string)$1->get_name()+(string)$2->get_name(), "NON_TERMINAL");
 		$$ = x;
 		fprintf(logfile , "%s%s\n\n" , $1->get_name().c_str() , $2->get_name().c_str());
 	}
 	| unit
 	{
-		fprintf(logfile,"At line no: %d: program : unit\n\n",line);
+		fprintf(logfile,"Line %d: program : unit\n\n",line);
 		fprintf(logfile,"%s\n",$1->get_name().c_str());
 		$$ = new SymbolInfo($1->get_name()+"\n", "NON_TERMINAL");
 
@@ -212,19 +212,19 @@ program : program unit
 
 unit : var_declaration
 	{
-		fprintf(logfile,"At line no: %d: unit : var_declation\n\n",line);
+		fprintf(logfile,"Line %d: unit : var_declaration\n\n",line);
 		fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      | func_declaration
 	{
-		fprintf(logfile,"At line no: %d: unit : func_declaration\n\n",line);
+		fprintf(logfile,"Line %d: unit : func_declaration\n\n",line);
 		fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
      | func_definition
 	{
-    fprintf(logfile,"At line no: %d: unit : func_definition\n\n",line);
+    fprintf(logfile,"Line %d: unit : func_definition\n\n",line);
 		fprintf(logfile,"%s\n",$1->get_name().c_str());
 		$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
 	}
@@ -233,7 +233,7 @@ unit : var_declaration
 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 	{
     $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+");", "NON_TERMINAL");
-    fprintf(logfile , "At line no: %d func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n\n",line);
+    fprintf(logfile , "Line %d: func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n\n",line);
     fprintf(logfile , "%s %s(%s);\n\n" , $1->get_name().c_str() , $2->get_name().c_str(),$4->get_name().c_str());
 
     /* checking whether already declared or not */
@@ -241,6 +241,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
     if(temp != NULL) {
 			error_cnt++;
 			fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
+      fprintf(logfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
 		}
     else{
       table.Insert($2->get_name() , "ID" , logfile);
@@ -255,7 +256,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 	| type_specifier ID LPAREN RPAREN SEMICOLON
 	{
 		$$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"();", "NON_TERMINAL");
-		fprintf(logfile , "At line no: %d func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
+		fprintf(logfile , "Line %d: func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
 		fprintf(logfile , "%s %s();\n\n" , $1->get_name().c_str() , $2->get_name().c_str());
 
 
@@ -264,6 +265,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 		if(temp != NULL) {
 			error_cnt++;
 			fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
+      fprintf(logfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
 		}
     else{
       table.Insert($2->get_name() , "ID" , logfile);
@@ -281,8 +283,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
     //chking if invalid params given
     if($4->get_name()=="int" or $4->get_name()=="float"){
       error_cnt++;
-      fprintf(logfile , "Error at line %d: 1th parameter's name not given in function definition of var\n\n" , line);
-      fprintf(errorfile , "Error at line %d: 1th parameter's name not given in function definition of var\n\n" , line);
+      fprintf(logfile , "Error at line %d: 1th parameter's name not given in function definition of %s\n\n" , line, $2->get_name().c_str());
+      fprintf(errorfile , "Error at line %d: 1th parameter's name not given in function definition of %s\n\n" , line, $2->get_name().c_str());
     }
     //chking if declared previously and now being defined
     //param types,return type must be matched
@@ -291,7 +293,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       function_ f = get_func($2->get_name());
       if(f.return_type != $1->get_name()){
         error_cnt++;
-        fprintf(errorfile , "Error at line: %d Type Mismatch (previously declared but not being defined properly now)\n\n",line);
+        fprintf(errorfile , "Error at line %d: Return type mismatch with function declaration in function %s\n\n",line,$2->get_name().c_str());
+        fprintf(logfile , "Error at line %d: Return type mismatch with function declaration in function %s\n\n",line,$2->get_name().c_str());
       }
       else {
         bool matched = true;
@@ -309,7 +312,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
         }
         if(!matched){
           error_cnt++;
-          fprintf(errorfile , "Error at line: %d Type Mismatch (previously declared but not being defined properly now)\n\n",line);
+          fprintf(errorfile , "Error at line %d: Total number of arguments mismatch with declaration in function %s\n\n",line , $2->get_name().c_str());
+          fprintf(logfile , "Error at line %d: Total number of arguments mismatch with declaration in function %s\n\n",line, $2->get_name().c_str());
         }
       }
     }
@@ -319,7 +323,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 		SymbolInfo* temp = table.Lookup_in_current($2->get_name());
 		if(temp != NULL and (!temp->get_is_declared_func())) {
 			error_cnt++;
-			fprintf(errorfile , "Error at line %d: Multiple definition of %s\n\n" , line , $2->get_name().c_str());
+			fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
+      fprintf(logfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
 		}
 		else if(temp == NULL){
 			table.Insert($2->get_name() , "ID" , logfile);
@@ -334,7 +339,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
         string tp = "ID";
         SymbolInfo *tmp = table.Lookup_in_current(nm);
         if(tmp){
-          fprintf(errorfile,"Error at line %d: parameter '%s' already declared before\n\n",line,nm.c_str());
+          fprintf(errorfile,"Error at line %d: Multiple declaration of %s in parameter\n\n",line,nm.c_str());
+          fprintf(logfile,"Error at line %d: Multiple declaration of %s in parameter\n\n",line,nm.c_str());
           error_cnt++;
         }
         else{
@@ -342,11 +348,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
         }
     }
 
-  } compound_statement {table.printall(logfile); table.Exit_Scope(logfile);var_list.clear();}
+  } compound_statement {/*table.printall(logfile);*/ table.Exit_Scope(logfile);var_list.clear();}
 
   {
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+")"+$7->get_name()+"\n\n", "NON_TERMINAL");
-      fprintf(logfile , "At line no: %d func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n" , line);
+      fprintf(logfile , "Line %d: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n" , line);
       fprintf(logfile , "%s %s(%s)%s\n\n" , $1->get_name().c_str(),$2->get_name().c_str(),$4->get_name().c_str(),$7->get_name().c_str());
 
   }
@@ -357,7 +363,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
   		SymbolInfo* temp = table.Lookup_in_current($2->get_name());
       if(temp != NULL and (!temp->get_is_declared_func())) {
   			error_cnt++;
-  			fprintf(errorfile , "Error at line %d: Multiple definition of %s\n\n" , line , $2->get_name().c_str());
+  			fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
+        fprintf(logfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->get_name().c_str());
   		}
   		else if(temp == NULL){
   			table.Insert($2->get_name() , "ID" , logfile);
@@ -367,10 +374,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       table.Enter_Scope(logfile);
 
     }
-    compound_statement {table.printall(logfile);table.Exit_Scope(logfile);var_list.clear();}
+    compound_statement {/*table.printall(logfile);*/table.Exit_Scope(logfile);var_list.clear();}
  	{
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"()"+$6->get_name()+"\n\n", "NON_TERMINAL");
-      fprintf(logfile , "At line no: %d func_definition : type_specifier ID LPAREN RPAREN compound_statement\n\n" , line);
+      fprintf(logfile , "Line %d: func_definition : type_specifier ID LPAREN RPAREN compound_statement\n\n" , line);
       fprintf(logfile , "%s %s()%s\n\n" , $1->get_name().c_str(),$2->get_name().c_str(),$6->get_name().c_str());
 
 	}
@@ -381,18 +388,23 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 parameter_list  : parameter_list COMMA type_specifier ID
 		{
 			$$ = new SymbolInfo($1->get_name()+","+$3->get_name()+" "+$4->get_name(), "NON_TERMINAL");
-			fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier ID\n\n",line);
+			fprintf(logfile,"Line %d: parameter_list : parameter_list COMMA type_specifier ID\n\n",line);
 			fprintf(logfile , "%s , %s %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str(),$4->get_name().c_str());
 
 			/* adding parameter to parameter list */
       $$->param = $1->param;
 			$$->push_in_param($4->get_name() , $3->get_name());
 
+      if($3->get_type()=="void"){
+        error_cnt++;
+        fprintf(logfile,"Error at Line %d: Variable type cannot be void\n\n",line);
+        fprintf(errorfile,"Error at Line %d: Variable type cannot be void\n\n",line);
+      }
 		}
 		| parameter_list COMMA type_specifier
 		{
 			$$ = new SymbolInfo($1->get_name()+","+$3->get_name(), "NON_TERMINAL");
-			fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier\n\n",line);
+			fprintf(logfile,"Line %d: parameter_list  : parameter_list COMMA type_specifier\n\n",line);
 			fprintf(logfile , "%s , %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str());
 
 			/* adding parameter to parameter list */
@@ -402,17 +414,21 @@ parameter_list  : parameter_list COMMA type_specifier ID
  		| type_specifier ID
 		{
 			$$ = new SymbolInfo($1->get_name()+" "+$2->get_name(), "NON_TERMINAL");
-			fprintf(logfile,"At line no: %d parameter_list  : type_specifier ID\n\n",line);
+			fprintf(logfile,"Line %d: parameter_list  : type_specifier ID\n\n",line);
 			fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
 
 			/* adding parameter to parameter list */
-
+      if($1->get_name()=="void"){
+        error_cnt++;
+				fprintf(errorfile,"Error at line %d: Variable type cannot be void\n\n",line);
+        fprintf(logfile,"Error at line %d: Variable type cannot be void\n\n",line);
+      }
 			$$->push_in_param($2->get_name() ,$1->get_name());
 		}
 		| type_specifier
 		{
 			$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
-			fprintf(logfile,"At line no: %d parameter_list  : type_specifier\n\n",line);
+			fprintf(logfile,"Line %d: parameter_list  : type_specifier\n\n",line);
 			fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str());
 
 			/* adding parameter to parameter list */
@@ -423,12 +439,6 @@ parameter_list  : parameter_list COMMA type_specifier ID
     {
       yyclearin;
       yyerrok;
-      //error_cnt++;
-      //fprintf(logfile , "Error at line %d: syntax error\n\n" , line);
-      //fprintf(logfile , "Error at line %d: Error in function parameter\n\n" , line);
-      //fprintf(errorfile , "Error at line %d: syntax error\n\n" , line);
-      //fprintf(errorfile , "Error at line %d: Error in function parameter\n\n" , line);
-
     }
  		;
 
@@ -436,22 +446,24 @@ parameter_list  : parameter_list COMMA type_specifier ID
 compound_statement : LCURL statements RCURL
   {
       $$ = new SymbolInfo("{\n"+$2->get_name()+"\n}"+"\n\n", "NON_TERMINAL");
-      fprintf(logfile,"At line no: %d compound_statement : LCURL statements RCURL\n\n",line);
+      fprintf(logfile,"Line %d: compound_statement : LCURL statements RCURL\n\n",line);
 			fprintf(logfile,"{\n%s\n}\n\n",$2->get_name().c_str());
 
+      table.printall(logfile);
   }
  		    | LCURL RCURL
   {
     $$ = new SymbolInfo("{\n}", "NON_TERMINAL");
-    fprintf(logfile,"At line no: %d compound_statement : LCURL RCURL\n\n",line);
+    fprintf(logfile,"Line %d: compound_statement : LCURL RCURL\n\n",line);
     fprintf(logfile,"{}\n\n");
 
+    table.printall(logfile);
   }
  		    ;
 
 var_declaration : type_specifier declaration_list SEMICOLON
 		{
-			fprintf(logfile,"At line no: %d var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
+			fprintf(logfile,"Line %d: var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
 			fprintf(logfile,"%s %s;\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 			$$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+";", "NON_TERMINAL");
 
@@ -464,7 +476,8 @@ var_declaration : type_specifier declaration_list SEMICOLON
 			/* inserting in symboltable */
 			if($1->get_name()=="void"){
 				error_cnt++;
-				fprintf(errorfile,"Error at line %d: variable cannot be of type void\n\n",line);
+				fprintf(errorfile,"Error at line %d: Variable type cannot be void\n\n",line);
+        fprintf(logfile,"Error at line %d: Variable type cannot be void\n\n",line);
 
 			}
 			else{
@@ -474,6 +487,7 @@ var_declaration : type_specifier declaration_list SEMICOLON
 					if(temp != NULL) {
 						error_cnt++;
 						fprintf(errorfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->var[i].name.c_str());
+            fprintf(logfile , "Error at line %d: Multiple declaration of %s\n\n" , line , $2->var[i].name.c_str());
 					}
 					else{
 						table.Insert($2->var[i].name , "ID" , logfile);
@@ -492,16 +506,16 @@ var_declaration : type_specifier declaration_list SEMICOLON
 			//var_list.clear();
 		}
     |
-    error SEMICOLON
+   error SEMICOLON
     {
-      //`cout<<"error paisi"<<endl;
+      yyclearin;
       yyerrok;
     }
  		;
 
 type_specifier	: INT
 		{
-			fprintf(logfile,"At line no: %d: type_specifier : INT \n\n",line);
+			fprintf(logfile,"Line %d: type_specifier : INT \n\n",line);
 			variable_type = "int";
 
 			SymbolInfo *x = new SymbolInfo("int" , "int");
@@ -510,7 +524,7 @@ type_specifier	: INT
 		}
  		| FLOAT
 		{
-			fprintf(logfile,"At line no: %d: type_specifier : FLOAT \n",line);
+			fprintf(logfile,"Line %d: type_specifier : FLOAT \n",line);
 			variable_type = "float";
 
 			SymbolInfo *x = new SymbolInfo("float" , "float");
@@ -519,7 +533,7 @@ type_specifier	: INT
 		}
  		| VOID
  		{
-			 fprintf(logfile,"At line no: %d: type_specifier : VOID \n",line);
+			 fprintf(logfile,"Line %d: type_specifier : VOID \n",line);
 			variable_type = "void";
 
 			SymbolInfo *x = new SymbolInfo("void" , "void");
@@ -530,7 +544,7 @@ type_specifier	: INT
 
 declaration_list : declaration_list COMMA ID
 		{
-			fprintf(logfile,"At line no: %d: declaration_list : declaration_list COMMA ID\n\n",line);
+			fprintf(logfile,"Line %d: declaration_list : declaration_list COMMA ID\n\n",line);
 			$$ = new SymbolInfo((string)$1->get_name()+(string)","+(string)$3->get_name(), "NON_TERMINAL");
 			fprintf(logfile , "%s,%s\n\n" , $1->get_name().c_str() , $3->get_name().c_str());
 
@@ -546,7 +560,7 @@ declaration_list : declaration_list COMMA ID
 		}
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
 		{
-			fprintf(logfile,"At line no: %d declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
+			fprintf(logfile,"Line %d: declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
 			$$ = new SymbolInfo((string)$1->get_name()+(string)","+(string)$3->get_name()+(string)"["+(string)$5->get_name()+(string)"]", "NON_TERMINAL");
 			fprintf(logfile , "%s,%s[%s]\n\n" , $1->get_name().c_str() , $3->get_name().c_str() , $5->get_name().c_str());
 
@@ -567,7 +581,7 @@ declaration_list : declaration_list COMMA ID
 
  		  | ID
 		{
-			fprintf(logfile,"At line no: %d declaration_list : ID\n\n",line);
+			fprintf(logfile,"Line %d: declaration_list : ID\n\n",line);
  			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
  			$$ = new SymbolInfo($1->get_name() ,  "ID");
@@ -582,7 +596,7 @@ declaration_list : declaration_list COMMA ID
 		}
  		| ID LTHIRD CONST_INT RTHIRD
 		{
-			fprintf(logfile , "At line no: %d  declaration_list: ID LTHIRD CONST_INT RTHIRD\n\n",line);
+			fprintf(logfile , "Line %d:  declaration_list: ID LTHIRD CONST_INT RTHIRD\n\n",line);
 			$$ = new SymbolInfo($1->get_name()+"["+$3->get_name()+"]", "NON_TERMINAL");
 			fprintf(logfile , "%s[%s]\n\n",$1->get_name().c_str() , $3->get_name().c_str());
 
@@ -600,11 +614,7 @@ declaration_list : declaration_list COMMA ID
 		}
     | declaration_list error
     {
-      //error_cnt++;
       yyclearin;
-      //yyerrok;
-      //fprintf(logfile , "Error at line %d: Syntax Error\n\n" , line);
-      //fprintf(errorfile , "Error at line %d: Syntax Error\n\n" , line);
     }
 
  		  ;
@@ -612,14 +622,14 @@ declaration_list : declaration_list COMMA ID
 statements : statement
     {
        $$ = $1;
-       fprintf(logfile , "At line no: %d statements : statement\n\n" , line);
+       fprintf(logfile , "Line %d: statements : statement\n\n" , line);
        fprintf(logfile , "%s\n\n" , $1->get_name().c_str());
 
     }
 	   | statements statement
     {
       $$ = new SymbolInfo($1->get_name()+$2->get_name() , "NON_TERMINAL");
-      fprintf(logfile , "At line no: %d statements : statements statement\n\n" , line);
+      fprintf(logfile , "Line %d: statements : statements statement\n\n" , line);
       fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
 
     }
@@ -627,21 +637,21 @@ statements : statement
 
 statement : var_declaration
     {
-      fprintf(logfile,"At line no: %d statement : var_declaration\n\n",line);
+      fprintf(logfile,"Line %d: statement : var_declaration\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       $1->setname($1->get_name()+"\n");
   		$$=$1;
     }
 	  | expression_statement
     {
-      fprintf(logfile,"At line no: %d statement : expression_statement\n\n",line);
+      fprintf(logfile,"Line %d: statement : expression_statement\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       $1->setname($1->get_name()+"\n");
 			$$=$1;
     }
 	  | compound_statement
     {
-      fprintf(logfile,"At line no: %d statement : compound_statement\n\n",line);
+      fprintf(logfile,"Line %d: statement : compound_statement\n\n",line);
       fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
       $$=$1;
@@ -650,14 +660,14 @@ statement : var_declaration
     {
       string str="for("+$3->get_name()+$4->get_name()+$5->get_name()+")"+$7->get_name();
       $$ = new SymbolInfo(str , "NON_TERMINAL");
-      fprintf(logfile,"line no. %d: statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n",line);
+      fprintf(logfile,"Line %d: statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n",line);
 			fprintf(logfile,"%s\n\n",str.c_str());
     }
 	  | IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
     {
       string str = "if("+$3->get_name()+")"+$5->get_name();
       $$ = new SymbolInfo(str , "statement");
-      fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement\n\n",line);
+      fprintf(logfile,"Line %d: statement : IF LPAREN expression RPAREN statement\n\n",line);
       fprintf(logfile,"%s\n\n",str.c_str());
 
     }
@@ -665,7 +675,7 @@ statement : var_declaration
     {
       string str = "if("+$3->get_name()+")"+$5->get_name()+"else"+$7->get_name();
       $$ = new SymbolInfo(str , "statement");
-      fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
+      fprintf(logfile,"Line %d: statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
       fprintf(logfile,"%s\n\n",str.c_str());
 
     }
@@ -673,13 +683,13 @@ statement : var_declaration
     {
       string str = "while("+$3->get_name()+")"+$5->get_name();
       $$ = new SymbolInfo(str , "statement");
-      fprintf(logfile,"At line no: %d statement : WHILE LPAREN expression RPAREN statement\n\n",line);
+      fprintf(logfile,"Line %d: statement : WHILE LPAREN expression RPAREN statement\n\n",line);
       fprintf(logfile,"%s\n\n",str.c_str());
     }
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
     {
       $$ = new SymbolInfo("printf("+$3->get_name()+");" , "statement");
-      fprintf(logfile,"At line no: %d statement : PRINTLN LPAREN ID RPAREN SEMICOLON\n\n",line);
+      fprintf(logfile,"Line %d: statement : PRINTLN LPAREN ID RPAREN SEMICOLON\n\n",line);
       fprintf(logfile , "printf(%s);\n\n" , $3->get_name().c_str());
 
       if($3->get_is_func()){
@@ -699,7 +709,7 @@ statement : var_declaration
 	  | RETURN expression SEMICOLON
     {
       $$ = new SymbolInfo("return "+$2->get_name()+";" , "statement");
-      fprintf(logfile,"At line no: %d statement : RETURN expression SEMICOLON\n\n",line);
+      fprintf(logfile,"Line %d: statement : RETURN expression SEMICOLON\n\n",line);
       fprintf(logfile , "return %s;\n\n" , $2->get_name().c_str());
 
       /* ----do this------
@@ -712,13 +722,13 @@ statement : var_declaration
 expression_statement 	: SEMICOLON
     {
       $$ = new SymbolInfo(";" , "expression_statement");
-      fprintf(logfile,"At line no: %d expression_statement : SEMICOLON\n",line);
+      fprintf(logfile,"Line %d: expression_statement : SEMICOLON\n",line);
 			fprintf(logfile,";\n\n");
     }
 			| expression SEMICOLON
     {
       $$ = new SymbolInfo($1->get_name()+";" , "expression_statement");
-      fprintf(logfile,"At line no: %d expression_statement : expression SEMICOLON\n\n",line);
+      fprintf(logfile,"Line %d: expression_statement : expression SEMICOLON\n\n",line);
       fprintf(logfile , "%s;\n\n" , $1->get_name().c_str());
 
     }
@@ -726,8 +736,6 @@ expression_statement 	: SEMICOLON
     {
       //error_cnt++;
       yyclearin;
-      //fprintf(logfile , "Error at line %d: Syntax error\n\n" , line);
-      //fprintf(errorfile , "Error at line %d: Syntax error\n\n" , line);
     }
 			;
 
@@ -736,7 +744,7 @@ variable :
     ID
     {
       //$$ = new SymbolInfo($1->get_name() , "variable");
-      fprintf(logfile,"At line no. %d: variable : ID\n",line);
+      fprintf(logfile,"Line %d: variable : ID\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       $$ = $1;
       //Semantic : chk if variable is declared before
@@ -761,7 +769,7 @@ variable :
 
 	 | ID LTHIRD expression RTHIRD
    {
-     fprintf(logfile,"At line no: %d variable : ID LTHIRD expression RTHIRD\n",line);
+     fprintf(logfile,"Line %d: variable : ID LTHIRD expression RTHIRD\n",line);
 		 fprintf(logfile,"%s[%s]\n\n",$1->get_name().c_str(),$3->get_name().c_str());
      $$ = new SymbolInfo($1->get_name()+"["+$3->get_name()+"]" , "variable");
 
@@ -775,13 +783,13 @@ variable :
  expression : logic_expression
     {
       $$ = $1;
-      fprintf(logfile,"At line no: %d expression : logic_expression\n\n",line);
+      fprintf(logfile,"Line %d: expression : logic_expression\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     }
 	   | variable ASSIGNOP logic_expression
     {
       $$ = new SymbolInfo($1->get_name()+"="+$3->get_name() , "expression");
-      fprintf(logfile,"At line no: %d expression : variable ASSIGNOP logic_expression\n\n",line);
+      fprintf(logfile,"Line %d: expression : variable ASSIGNOP logic_expression\n\n",line);
 			fprintf(logfile,"%s = %s\n\n",$1->get_name().c_str(),$3->get_name().c_str());
 
       //semantics
@@ -808,7 +816,8 @@ variable :
         if(isvar){
           if(varname != $1->get_name()){
             error_cnt++;
-            fprintf(errorfile , "Error at line: %d %s is not an array\n\n" , line,varname.c_str());
+            fprintf(errorfile , "Error at line %d: %s not an array\n\n" , line,varname.c_str());
+            fprintf(logfile , "Error at line %d: %s not an array\n\n" , line,varname.c_str());
           }
         }
         //chk if array
@@ -818,7 +827,8 @@ variable :
             //let's see if ara is being used without any index
             if(varname==$1->get_name()){
               error_cnt++;
-              fprintf(errorfile,"Error at line: %d Type Mismatch\n\n",line);
+              fprintf(errorfile,"Error at line: %d Type Mismatch, %s is an array\n\n",line , varname.c_str());
+              fprintf(logfile,"Error at line: %d Type Mismatch, %s is an array\n\n",line , varname.c_str());
               break;
 
             }
@@ -826,7 +836,8 @@ variable :
 
             else if(!is_ara_idx_valid($1->get_name() , var_list[i].var_size)){
               error_cnt++;
-              fprintf(errorfile,"Error at line: %d Wrong array index(Expression inside third brackets not an integer)\n\n",line);
+              fprintf(errorfile,"Error at line: %d Expression inside third brackets not an integer\n\n",line);
+              fprintf(logfile,"Error at line: %d Expression inside third brackets not an integer\n\n",line);
               break;
             }
           }
@@ -836,7 +847,8 @@ variable :
         if(x->getVariableType()=="int" && $3->getVariableType()=="float"){
 					error_cnt++;
           $$->setVariableType("int");
-					fprintf(errorfile,"Error at line %d: type mismatch in assignment \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
+					fprintf(errorfile,"Error at line %d: Type mismatch \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
+          fprintf(logfile,"Error at line %d: Type mismatch \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
 				}
         else if(x->getVariableType()=="float" && $3->getVariableType()=="int"){
           $$->setVariableType("float");
@@ -856,10 +868,12 @@ variable :
           if(f.return_type=="void"){
             error_cnt++;
             fprintf(errorfile , "Error at line: %d Void function used in expression\n\n",line);
+            fprintf(logfile , "Error at line: %d Void function used in expression\n\n",line);
           }
           else if(f.return_type != $1->getVariableType()){
             error_cnt++;
             fprintf(errorfile , "Error at line: %d Type Mismatch in function returning\n\n",line);
+            fprintf(logfile , "Error at line: %d Type Mismatch in function returning\n\n",line);
           }
         }
       }
@@ -868,7 +882,8 @@ variable :
 
 			else{
 				error_cnt++;
-				fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,varname.c_str());
+				fprintf(errorfile,"Error at line %d: Undeclared variable %s\n\n",line,varname.c_str());
+        fprintf(logfile,"Error at line %d: Undeclared variable %s\n\n",line,varname.c_str());
 			}
     }
 	   ;
@@ -876,14 +891,14 @@ variable :
 logic_expression : rel_expression
     {
       $$ = $1;
-      fprintf(logfile,"At line no: %d logic_expression : rel_expression\n\n",line);
+      fprintf(logfile,"Line %d: logic_expression : rel_expression\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
     }
 		 | rel_expression LOGICOP rel_expression
     {
       $$ = new SymbolInfo($1->get_name()+$2->get_name()+$3->get_name() , "logic_expression");
-      fprintf(logfile,"At line no: %d logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
+      fprintf(logfile,"Line %d: logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
       fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
       /*semantic
@@ -893,6 +908,7 @@ logic_expression : rel_expression
       if($1->getVariableType()=="void" || $3->getVariableType()=="void"){
  				error_cnt++;
  				fprintf(errorfile,"Error at line %d found: Type Mismatch(Operands of %s can't be void)\n\n",line,$2->get_name().c_str());
+        fprintf(logfile,"Error at line %d found: Type Mismatch(Operands of %s can't be void)\n\n",line,$2->get_name().c_str());
  			}
 
        $$->setVariableType("int");
@@ -902,14 +918,14 @@ logic_expression : rel_expression
 rel_expression	: simple_expression
    {
      $$ = $1;
-     fprintf(logfile,"At line no: %d rel_expression	: simple_expression\n\n",line);
+     fprintf(logfile,"Line %d: rel_expression	: simple_expression\n\n",line);
      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
    }
 		| simple_expression RELOP simple_expression
    {
      $$ = new SymbolInfo($1->get_name()+$2->get_name()+$3->get_name() , "rel_expression");
-     fprintf(logfile,"At line no: %d rel_expression : simple_expression RELOP simple_expression\n\n",line);
+     fprintf(logfile,"Line %d: rel_expression : simple_expression RELOP simple_expression\n\n",line);
      fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
      /*semantic
@@ -919,6 +935,7 @@ rel_expression	: simple_expression
      if($1->getVariableType()=="void" || $3->getVariableType()=="void"){
 				error_cnt++;
 				fprintf(errorfile,"Error at line %d found: Type Mismatch(Operands of %s can't be void)\n\n",line,$2->get_name().c_str());
+        fprintf(logfile,"Error at line %d found: Type Mismatch(Operands of %s can't be void)\n\n",line,$2->get_name().c_str());
 			}
       $$->setVariableType("int");
    }
@@ -927,14 +944,14 @@ rel_expression	: simple_expression
 simple_expression : term
   {
     $$ = $1;
-    fprintf(logfile,"At line no: %d simple_expression : term\n\n",line);
+    fprintf(logfile,"Line %d: simple_expression : term\n\n",line);
     fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
   }
 		  | simple_expression ADDOP term
   {
     $$ = new SymbolInfo($1->get_name()+$2->get_name()+$3->get_name() , "simple_expression");
-    fprintf(logfile,"At line no: %d simple_expression : simple_expression ADDOP term\n\n",line);
+    fprintf(logfile,"Line %d: simple_expression : simple_expression ADDOP term\n\n",line);
     fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
     if($1->getVariableType()=="float" || $3->getVariableType()=="float")
@@ -948,13 +965,13 @@ simple_expression : term
 term :	unary_expression
     {
       $$ = $1;
-      fprintf(logfile,"At line no: %d term :	unary_expression\n\n",line);
+      fprintf(logfile,"Line %d: term :	unary_expression\n\n",line);
       fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     }
      |  term MULOP unary_expression
     {
       $$ = new SymbolInfo($1->get_name()+$2->get_name()+$3->get_name() , "term");
-      fprintf(logfile,"At line no: %d term : term MULOP unary_expression\n\n",line);
+      fprintf(logfile,"Line %d: term : term MULOP unary_expression\n\n",line);
       fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
       //if $3 is void type function
@@ -1006,7 +1023,7 @@ unary_expression : ADDOP unary_expression
         }
       }
 
-      fprintf(logfile,"At line no: %d unary_expression : ADDOP unary_expression\n",line);
+      fprintf(logfile,"Line %d: unary_expression : ADDOP unary_expression\n",line);
 			fprintf(logfile,"%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 
 			$$ = new SymbolInfo($1->get_name()+$2->get_name(),"unary_expression");
@@ -1017,7 +1034,7 @@ unary_expression : ADDOP unary_expression
     }
 		 | NOT unary_expression
     {
-      fprintf(logfile,"At line no: %d unary_expression : NOT unary_expression\n",line);
+      fprintf(logfile,"Line %d: unary_expression : NOT unary_expression\n",line);
       fprintf(logfile,"!%s\n\n",$2->get_name().c_str());
 
       $$ = new SymbolInfo("!"+$2->get_name(),"unary_expression");
@@ -1029,15 +1046,17 @@ unary_expression : ADDOP unary_expression
 		 | factor
      {
        $$ = $1;
-       fprintf(logfile,"At line no: %d unary_expression :	factor\n\n",line);
+       fprintf(logfile,"Line %d: unary_expression :	factor\n\n",line);
        fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+
+       
      }
 
 		 ;
 
 factor	: variable
     {
-      fprintf(logfile,"At line no: %d factor : variable\n\n",line);
+      fprintf(logfile,"Line %d: factor : variable\n\n",line);
       fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       $$ = $1;
       ///pass arrayname if array otherwise pass varname only
@@ -1047,7 +1066,8 @@ factor	: variable
       SymbolInfo *x=table.Lookup(varname);
 			if(!x){
         error_cnt++;
-        fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,varname.c_str());
+        fprintf(errorfile,"Error at line %d: Undeclared variable %s\n\n",line,varname.c_str());
+        fprintf(logfile,"Error at line %d: Undeclared variable %s\n\n",line,varname.c_str());
       }
       else{
 
@@ -1061,8 +1081,8 @@ factor	: variable
               //let's see if ara is being used without any index
               if(varname==$1->get_name()){
                 error_cnt++;
-                fprintf(errorfile,"Error at line: %d %s is an array\n\n",line,varname.c_str());
-                fprintf(logfile,"Error at line: %d %s is an array\n\n",line,varname.c_str());
+                fprintf(errorfile,"Error at line %d:Type Mismatch, %s is an array\n\n",line,varname.c_str());
+                fprintf(logfile,"Error at line %d:Type Mismatch, %s is an array\n\n",line,varname.c_str());
                 $$->set_already_error_in_param();
                 break;
               }
@@ -1070,6 +1090,7 @@ factor	: variable
               else if(!is_ara_idx_valid($1->get_name() , var_list[i].var_size)){
                 error_cnt++;
                 fprintf(errorfile,"Error at line: %d Wrong array index\n\n",line);
+                fprintf(logfile,"Error at line: %d Wrong array index\n\n",line);
                 break;
               }
             }
@@ -1077,10 +1098,11 @@ factor	: variable
       }
 
     }
-	| ID LPAREN argument_list RPAREN
+	  | ID LPAREN argument_list RPAREN
     {
+
       $$ = new SymbolInfo($1->get_name()+"("+$3->get_name()+")" , "factor");
-      fprintf(logfile,"At line no: %d factor : ID LPAREN argument_list RPAREN\n\n",line);
+      fprintf(logfile,"Line %d: factor : ID LPAREN argument_list RPAREN\n\n",line);
       fprintf(logfile,"%s(%s)\n\n",$1->get_name().c_str(),$3->get_name().c_str());
       $$->set_is_func(true);
 
@@ -1089,6 +1111,7 @@ factor	: variable
       if(!is_in_func_list($1->get_name())){
         error_cnt++;
         fprintf(errorfile , "Error at line: %d Undeclared Function %s\n\n",line,$1->get_name().c_str());
+        fprintf(logfile , "Error at line: %d Undeclared Function %s\n\n",line,$1->get_name().c_str());
       }
       else{
         function_ f = get_func($1->get_name());
@@ -1115,11 +1138,12 @@ factor	: variable
             }
           }
         }
-        cout<<$1->get_name()<<" "<<already_error_in_arg<<endl;
+        //cout<<$1->get_name()<<" "<<already_error_in_arg<<endl;
         if(!matched && !already_error_in_arg){
           //
           error_cnt++;
           fprintf(errorfile , "Error at line: %d Total number of arguments mismatch in function %s\n\n",line,$1->get_name().c_str());
+          fprintf(logfile , "Error at line: %d Total number of arguments mismatch in function %s\n\n",line,$1->get_name().c_str());
         }
       }
 
@@ -1127,7 +1151,7 @@ factor	: variable
 	| LPAREN expression RPAREN
     {
       $$ = new SymbolInfo("("+$2->get_name()+")" , "factor");
-      fprintf(logfile,"At line no: %d factor : LPAREN expression RPAREN\n\n",line);
+      fprintf(logfile,"Line %d: factor : LPAREN expression RPAREN\n\n",line);
       fprintf(logfile,"(%s)\n\n",$2->get_name().c_str());
 
       $$->setVariableType($2->getVariableType());
@@ -1135,7 +1159,7 @@ factor	: variable
     }
 	| CONST_INT
     {
-      fprintf(logfile,"At line no: %d factor : CONST_INT\n\n",line);
+      fprintf(logfile,"Line %d: factor : CONST_INT\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 			$$=$1;
 			$$->setVariableType("int");
@@ -1143,7 +1167,7 @@ factor	: variable
     }
 	| CONST_FLOAT
     {
-      fprintf(logfile,"At line no: %d factor : CONST_FLOAT\n\n",line);
+      fprintf(logfile,"Line %d: factor : CONST_FLOAT\n\n",line);
 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 			$$=$1;
 			$$->setVariableType("float");
@@ -1151,14 +1175,15 @@ factor	: variable
     }
 	| variable INCOP
     {
-      fprintf(logfile,"At line no: %d factor	: variable INCOP\n\n",line);
+      fprintf(logfile,"Line %d: factor	: variable INCOP\n\n",line);
 			fprintf(logfile,"%s++\n\n",$1->get_name().c_str());
       $$ = new SymbolInfo($1->get_name()+"++","factor");
 
       SymbolInfo *x=table.Lookup(modified_name($1->get_name()));
 			if(!x){
         error_cnt++;
-        fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
+        fprintf(errorfile,"Error at line %d: Undeclared variable %s\n\n",line,$1->get_name().c_str());
+        fprintf(logfile,"Error at line %d: Undeclared variable %s\n\n",line,$1->get_name().c_str());
       }
       else{
 
@@ -1169,14 +1194,15 @@ factor	: variable
     }
 	| variable DECOP
     {
-      fprintf(logfile,"At line no: %d factor	: variable DECOP\n\n",line);
+      fprintf(logfile,"Line %d: factor	: variable DECOP\n\n",line);
 			fprintf(logfile,"%s--\n\n",$1->get_name().c_str());
       $$ = new SymbolInfo($1->get_name()+"--","factor");
 
       SymbolInfo *x=table.Lookup(modified_name($1->get_name()));
 			if(!x){
         error_cnt++;
-        fprintf(errorfile,"Error at line %d: variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
+        fprintf(errorfile,"Error at line %d: Undeclared variable %s\n\n",line,$1->get_name().c_str());
+        fprintf(logfile,"Error at line %d: Undeclared variable %s\n\n",line,$1->get_name().c_str());
       }
       else{
 
@@ -1184,11 +1210,12 @@ factor	: variable
          $$->setIdentity($1->getIdentity());
       }
     }
+
 	;
 
 argument_list : arguments
         {
-          fprintf(logfile,"At line no: %d argument_list : arguments\n\n",line);
+          fprintf(logfile,"Line %d: argument_list : arguments\n\n",line);
     			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     			$$=$1;
         }
@@ -1201,7 +1228,7 @@ argument_list : arguments
 arguments : arguments COMMA logic_expression
         {
           $$ = new SymbolInfo($1->get_name()+" , "+$3->get_name() , "arguments");
-          fprintf(logfile,"At line no: %d arguments : arguments COMMA logic_expression\n\n",line);
+          fprintf(logfile,"Line %d: arguments : arguments COMMA logic_expression\n\n",line);
           fprintf(logfile,"%s , %s\n\n",$1->get_name().c_str(),$3->get_name().c_str());
 
           $$->arg_list = $1->arg_list;
@@ -1222,7 +1249,7 @@ arguments : arguments COMMA logic_expression
         }
 	      | logic_expression
         {
-          fprintf(logfile,"At line no: %d arguments : logic_expression\n\n",line);
+          fprintf(logfile,"Line %d: arguments : logic_expression\n\n",line);
     			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     			$$=$1;
           bool isara=false;
