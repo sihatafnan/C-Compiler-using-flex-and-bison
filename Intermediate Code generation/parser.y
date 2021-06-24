@@ -47,13 +47,15 @@ struct function_{
   string f_name;
   vector<pss> params;
   string return_type;
+  int return_reg_no;
 } temp_func;
 
 vector<function_> func_list;
 
-void insert_in_func_list(string nm , vector<parameter>& p , string ret_type){
+void insert_in_func_list(string nm , vector<parameter>& p , string ret_type , int return_reg_number){
     temp_func.f_name = nm;
     temp_func.return_type = ret_type;
+    temp_func.return_reg_no = return_reg_number;
     for(int i=0;i<p.size();i++){
         temp_func.params.pb(mp(p[i].param_type , p[i].param_name));
     }
@@ -94,6 +96,7 @@ void print_func_list(){
     for(int j=0;j<func_list[i].params.size();j++){
       cout<<func_list[i].params[j].first<<" "<<func_list[i].params[j].second<<endl;
     }
+    cout<<"return reg : "<<func_list[i].return_reg_no<<endl;
   }
 }
 string to_str(int n)
@@ -184,10 +187,107 @@ void yyerror(char *s)
   fprintf(errorfile,"Error at Line no %d : %s\n\n",line,s);
 }
 
-
 int labelCount=1, tempCount=1;
 bool isReturning;
 string isReturningType;
+
+string print_function(){
+    string func="";
+    ///function for keyword PRINTLN
+ 		func+="PRINT_ID PROC\n\n";
+ 		func+="\t;SAVE IN STACK\n";
+ 		func+="\tPUSH AX\n";
+ 		func+="\tPUSH BX\n";
+ 		func+="\tPUSH CX\n";
+ 		func+="\tPUSH DX\n\n";
+
+ 		func+="\t;CHECK IF NEGATIVE\n";
+ 		func+="\tOR AX, AX\n";
+ 		func+="\tJGE PRINT_NUMBER\n\n";
+ 		func+="\t;PRINT MINUS SIGN\n";
+ 		func+="\tPUSH AX\n";
+ 		func+="\tMOV AH, 2\n";
+ 		func+="\tMOV DL, '-'\n";
+ 		func+="\tINT 21H\n";
+ 		func+="\tPOP AX\n\n";
+ 		func+="\tNEG AX\n\n";
+ 		func+="\tPRINT_NUMBER:\n";
+ 		func+="\tXOR CX, CX\n";
+ 		func+="\tMOV BX, 10D\n\n";
+ 		func+="\tREPEAT_CALC:\n\n";
+ 		func+="\t\t;AX:DX- QUOTIENT:REMAINDER\n";
+ 		func+="\t\tXOR DX, DX\n";
+ 		func+="\t\tDIV BX  ;DIVIDE BY 10\n";
+ 		func+="\t\tPUSH DX ;PUSH THE REMAINDER IN STACK\n\n";
+ 		func+="\t\tINC CX\n\n";
+ 		func+="\t\tOR AX, AX\n";
+ 		func+="\t\tJNZ REPEAT_CALC\n\n";
+
+ 		func+="\tMOV AH, 2\n\n";
+ 		func+="\tPRINT_LOOP:\n";
+ 		func+="\t\tPOP DX\n";
+ 		func+="\t\tADD DL, 30H\n";
+ 		func+="\t\tINT 21H\n";
+ 		func+="\t\tLOOP PRINT_LOOP\n";
+
+ 		func+="\n\t;NEWLINE\n";
+ 		func+="\tMOV AH, 2\n";
+ 		func+="\tMOV DL, 0AH\n";
+ 		func+="\tINT 21H\n";
+ 		func+="\tMOV DL, 0DH\n";
+ 		func+="\tINT 21H\n\n";
+
+ 		func+="\tPOP DX\n";
+ 		func+="\tPOP CX\n";
+ 		func+="\tPOP BX\n";
+ 		func+="\tPOP AX\n\n";
+ 		func+="\tRET\n";
+ 		func+="PRINT_ID ENDP\n\n";
+
+    return func;
+}
+
+//following 2 methos are helper function.get_first_index returns the first position of the forbidden part
+//of proc_code.get_last_Index returns the neding position of forbidden part.We then generate a valid new_proc_code
+//inside the modify_proc method and return it.
+int get_first_index(string str, string s)
+{
+
+    bool flag = false;
+    for (int i = 0; i < str.length(); i++) {
+        if (str.substr(i, s.length()) == s) {
+            return i+s.length();
+        }
+    }
+}
+int get_last_Index(string str, string s)
+{
+
+    bool flag = false;
+    for (int i = 0; i < str.length(); i++) {
+        if (str.substr(i, s.length()) == s) {
+            return i;
+        }
+    }
+}
+//removes anything from the procedure body if written after return statement
+string modify_proc(string fnm , string proc_code)
+{
+  function_ f = get_func(fnm);
+  string ret_reg = "T" + to_string(f.return_reg_no);
+  int start_idx = get_first_index(proc_code , "MOV "+ret_reg+", AX");
+  int end_idx = get_last_Index(proc_code , "POP DX");
+  string new_proc_code="";
+  for(int i=0;i<proc_code.length();i++){
+    if(i<=start_idx || i>=end_idx-2){
+      new_proc_code+=proc_code[i];
+    }
+  }
+  return new_proc_code;
+}
+
+string assembly_procs="";
+
 string newLabel()
 {
 	string temp="L"+to_str(labelCount);
@@ -203,7 +303,7 @@ string newTemp()
 	variableListForInit.push_back({temp,"0"});
 	return temp;
 }
-
+int f1,g1;
 %}
 
 %union {
@@ -234,9 +334,8 @@ start : program
     $$=$1;
     $$->set_code(assemblyCodes);
     if(error_cnt==0){
-      string init=".MODEL SMALL\n.STACK 100H\n";
+      string init=".MODEL SMALL\n.STACK 100H\n.DATA\n";
 
-		 		init+=".DATA\n";
         //for(int i=0;i<variableListForInit.size();i++){cout<<variableListForInit[i].first<<" "<<variableListForInit[i].second<<endl;}
 		 		//variables
 		 		for(int i=0;i<variableListForInit.size();i++){
@@ -245,59 +344,13 @@ start : program
 		 			else
 		 				init+=("\t"+variableListForInit[i].first+" DW "+variableListForInit[i].second+" DUP(?)\n");
 		 		}
-
+        //print_func_list();
 		 		init+=".CODE\n";
 
-		 		//function for PRINTLN
-		 		init+="PRINT_ID PROC\n\n";
-		 		init+="\t;SAVE IN STACK\n";
-		 		init+="\tPUSH AX\n";
-		 		init+="\tPUSH BX\n";
-		 		init+="\tPUSH CX\n";
-		 		init+="\tPUSH DX\n\n";
-
-		 		init+="\t;CHECK IF NEGATIVE\n";
-		 		init+="\tOR AX, AX\n";
-		 		init+="\tJGE PRINT_NUMBER\n\n";
-		 		init+="\t;PRINT MINUS SIGN\n";
-		 		init+="\tPUSH AX\n";
-		 		init+="\tMOV AH, 2\n";
-		 		init+="\tMOV DL, '-'\n";
-		 		init+="\tINT 21H\n";
-		 		init+="\tPOP AX\n\n";
-		 		init+="\tNEG AX\n\n";
-		 		init+="\tPRINT_NUMBER:\n";
-		 		init+="\tXOR CX, CX\n";
-		 		init+="\tMOV BX, 10D\n\n";
-		 		init+="\tREPEAT_CALC:\n\n";
-		 		init+="\t\t;AX:DX- QUOTIENT:REMAINDER\n";
-		 		init+="\t\tXOR DX, DX\n";
-		 		init+="\t\tDIV BX  ;DIVIDE BY 10\n";
-		 		init+="\t\tPUSH DX ;PUSH THE REMAINDER IN STACK\n\n";
-		 		init+="\t\tINC CX\n\n";
-		 		init+="\t\tOR AX, AX\n";
-		 		init+="\t\tJNZ REPEAT_CALC\n\n";
-
-		 		init+="\tMOV AH, 2\n\n";
-		 		init+="\tPRINT_LOOP:\n";
-		 		init+="\t\tPOP DX\n";
-		 		init+="\t\tADD DL, 30H\n";
-		 		init+="\t\tINT 21H\n";
-		 		init+="\t\tLOOP PRINT_LOOP\n";
-
-		 		init+="\n\t;NEWLINE\n";
-		 		init+="\tMOV AH, 2\n";
-		 		init+="\tMOV DL, 0AH\n";
-		 		init+="\tINT 21H\n";
-		 		init+="\tMOV DL, 0DH\n";
-		 		init+="\tINT 21H\n\n";
-
-		 		init+="\tPOP AX\n";
-		 		init+="\tPOP BX\n";
-		 		init+="\tPOP CX\n";
-		 		init+="\tPOP DX\n\n";
-		 		init+="\tRET\n";
-		 		init+="PRINT_ID ENDP\n\n";
+        ///adding print function
+		 		string print_func = print_function();
+        init+=print_func;
+        init+=assembly_procs;
         //cout<<assemblyCodes<<endl;
 		 		fprintf(asmCode,"%s",init.c_str());
 		 		fprintf(asmCode,"%s",$$->get_code().c_str());
@@ -307,14 +360,13 @@ start : program
 
 program : program unit
 	{
-
-		SymbolInfo *x = new SymbolInfo((string)$1->get_name()+(string)$2->get_name(), "NON_TERMINAL");
-		$$ = x;
+		$$ = new SymbolInfo((string)$1->get_name()+(string)$2->get_name(), "NON_TERMINAL");;
     $$->set_code($1->get_code() + $2->get_code());
 	}
 	| unit
 	{
-		$$ = new SymbolInfo($1->get_name()+"\n", "NON_TERMINAL");
+    $$=$1;
+		//$$ = new SymbolInfo($1->get_name()+"\n", "NON_TERMINAL");
 	}
 	;
 
@@ -350,15 +402,15 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
       fd->set_is_declared_func(true);
 
       //insert in func_list
-      insert_in_func_list($2->get_name() , $4->param , $1->get_name());
+      insert_in_func_list($2->get_name() , $4->param , $1->get_name() , tempCount-1);
     }
 
 	}
 	| type_specifier ID LPAREN RPAREN SEMICOLON
 	{
 		$$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"();", "NON_TERMINAL");
-		//fprintf(logfile , "At line no: %d func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
-		//fprintf(logfile , "%s %s();\n\n" , $1->get_name().c_str() , $2->get_name().c_str());
+		fprintf(logfile , "At line no: %d func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
+		fprintf(logfile , "%s %s();\n\n" , $1->get_name().c_str() , $2->get_name().c_str());
 
 
 		/* checking whether already declared or not */
@@ -427,7 +479,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 		else if(temp == NULL){
 			table.Insert($2->get_name() , "ID" , logfile);
       //insert in func_list
-      insert_in_func_list($2->get_name() , $4->param , $1->get_name());
+
 		}
 
 
@@ -447,7 +499,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 
   } compound_statement {table.printall(logfile); table.Exit_Scope(logfile);var_list.clear();}
 
-  {
+  {    insert_in_func_list($2->get_name() , $4->param , $1->get_name() , tempCount-1);
       //-------------------------------Assembly generation------------------------------------
       if($2->get_name()=="main")
 				assemblyCodes="MAIN PROC\n\n";
@@ -478,10 +530,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 			}
 
 			else{
-				assemblyCodes+="\tPOP AX\n";
-				assemblyCodes+="\tPOP BX\n";
-				assemblyCodes+="\tPOP CX\n";
 				assemblyCodes+="\tPOP DX\n";
+				assemblyCodes+="\tPOP CX\n";
+				assemblyCodes+="\tPOP BX\n";
+				assemblyCodes+="\tPOP AX\n";
 
 				assemblyCodes+="RET\n";
 				assemblyCodes+=$2->get_name()+" ENDP\n\n";
@@ -490,7 +542,13 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       //-------------------------------Assembly done-------------------------------------------
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+")"+$7->get_name()+"\n\n", "NON_TERMINAL");
       $$->set_code(assemblyCodes);
-
+      //debugging
+      //if($2->get_name()!="main"){
+      //  cout<<assemblyCodes<<endl;
+      //}
+      cout<<"xxx\n"<<modify_proc($2->get_name() , assemblyCodes)<<endl;
+      if($2->get_name()!="main")assembly_procs += modify_proc($2->get_name() , assemblyCodes);
+      print_func_list();
   }
 		| type_specifier ID LPAREN RPAREN
     {
@@ -500,10 +558,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       if(temp != NULL and (!temp->get_is_declared_func())) {
   			error_cnt++;
   			fprintf(errorfile , "Error at line %d: Multiple definition of %s\n\n" , line , $2->get_name().c_str());
+        fprintf(logfile , "Error at line %d: Multiple definition of %s\n\n" , line , $2->get_name().c_str());
   		}
   		else if(temp == NULL){
   			table.Insert($2->get_name() , "ID" , logfile);
-        insert_in_func_list($2->get_name() , $1->get_name());
+
   		}
 
       table.Enter_Scope(logfile);
@@ -511,6 +570,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
     }
     compound_statement {table.printall(logfile);table.Exit_Scope(logfile);var_list.clear();}
  	{
+      insert_in_func_list($2->get_name() , $1->get_name());
       //------------------------------------assembly generation------------------------------
       if($2->get_name()=="main")
 				assemblyCodes="MAIN PROC\n\n";
@@ -553,6 +613,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"()"+$6->get_name()+"\n\n", "NON_TERMINAL");
       $$->set_code(assemblyCodes);
+      if($2->get_name()!="main")assembly_procs += modify_proc($2->get_name() , assemblyCodes);
+      print_func_list();
 	}
 
 	 	;
@@ -561,8 +623,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 parameter_list  : parameter_list COMMA type_specifier ID
 		{
 			$$ = new SymbolInfo($1->get_name()+","+$3->get_name()+" "+$4->get_name(), "NON_TERMINAL");
-			////fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier ID\n\n",line);
-			//fprintf(logfile , "%s , %s %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str(),$4->get_name().c_str());
+			fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier ID\n\n",line);
+			fprintf(logfile , "%s , %s %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str(),$4->get_name().c_str());
 
 			/* adding parameter to parameter list */
       $$->param = $1->param;
@@ -572,8 +634,8 @@ parameter_list  : parameter_list COMMA type_specifier ID
 		| parameter_list COMMA type_specifier
 		{
 			$$ = new SymbolInfo($1->get_name()+","+$3->get_name(), "NON_TERMINAL");
-			////fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier\n\n",line);
-			//fprintf(logfile , "%s , %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str());
+			fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier\n\n",line);
+			fprintf(logfile , "%s , %s\n\n" , $1->get_name().c_str(),$3->get_name().c_str());
 
 			/* adding parameter to parameter list */
       $$->param = $1->param;
@@ -582,8 +644,8 @@ parameter_list  : parameter_list COMMA type_specifier ID
  		| type_specifier ID
 		{
 			$$ = new SymbolInfo($1->get_name()+" "+$2->get_name(), "NON_TERMINAL");
-			////fprintf(logfile,"At line no: %d parameter_list  : type_specifier ID\n\n",line);
-			//fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
+			fprintf(logfile,"At line no: %d parameter_list  : type_specifier ID\n\n",line);
+			fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
 
 			/* adding parameter to parameter list */
 
@@ -592,8 +654,8 @@ parameter_list  : parameter_list COMMA type_specifier ID
 		| type_specifier
 		{
 			$$ = new SymbolInfo($1->get_name(), "NON_TERMINAL");
-			////fprintf(logfile,"At line no: %d parameter_list  : type_specifier\n\n",line);
-			//fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str());
+			fprintf(logfile,"At line no: %d parameter_list  : type_specifier\n\n",line);
+			fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str());
 
 			/* adding parameter to parameter list */
 
@@ -602,28 +664,27 @@ parameter_list  : parameter_list COMMA type_specifier ID
 
  		;
 
-
 compound_statement : LCURL statements RCURL
   {
       $$=$2;
       //$$ = new SymbolInfo("{\n"+$2->get_name()+"\n}"+"\n\n", "NON_TERMINAL");
-      ////fprintf(logfile,"At line no: %d compound_statement : LCURL statements RCURL\n\n",line);
-			//fprintf(logfile,"{\n%s\n}\n\n",$2->get_name().c_str());
+      fprintf(logfile,"At line no: %d compound_statement : LCURL statements RCURL\n\n",line);
+			fprintf(logfile,"{\n%s\n}\n\n",$2->get_name().c_str());
 
   }
  		    | LCURL RCURL
   {
     $$ = new SymbolInfo("{\n}", "NON_TERMINAL");
-    ////fprintf(logfile,"At line no: %d compound_statement : LCURL RCURL\n\n",line);
-    //fprintf(logfile,"{}\n\n");
+    fprintf(logfile,"At line no: %d compound_statement : LCURL RCURL\n\n",line);
+    fprintf(logfile,"{}\n\n");
 
   }
  		    ;
 
 var_declaration : type_specifier declaration_list SEMICOLON
 		{
-			////fprintf(logfile,"At line no: %d var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
-		//	fprintf(logfile,"%s %s;\n\n",$1->get_name().c_str(),$2->get_name().c_str());
+			fprintf(logfile,"At line no: %d var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
+			fprintf(logfile,"%s %s;\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 			$$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+";", "NON_TERMINAL");
 
       $$->setVariableType($1->get_name());
@@ -662,35 +723,40 @@ var_declaration : type_specifier declaration_list SEMICOLON
 
 			//var_list.clear();
 		}
+  //  error SEMICOLON
+   //{
+     //yyclearin;
+     //yyerrok;
+   //}
 
  		;
 
 type_specifier	: INT
 		{
-			////fprintf(logfile,"At line no: %d: type_specifier : INT \n\n",line);
+			fprintf(logfile,"At line no: %d: type_specifier : INT \n\n",line);
 			variable_type = "int";
 
 			SymbolInfo *x = new SymbolInfo("int" , "int");
 			$$ = x;
-			//fprintf(logfile,"%s\n\n",$$->get_name().c_str());
+			fprintf(logfile,"%s\n\n",$$->get_name().c_str());
 		}
  		| FLOAT
 		{
-			////fprintf(logfile,"At line no: %d: type_specifier : FLOAT \n",line);
+			fprintf(logfile,"At line no: %d: type_specifier : FLOAT \n",line);
 			variable_type = "float";
 
 			SymbolInfo *x = new SymbolInfo("float" , "float");
 			$$ = x;
-			//fprintf(logfile,"%s\n\n",$$->get_name().c_str());
+			fprintf(logfile,"%s\n\n",$$->get_name().c_str());
 		}
  		| VOID
  		{
-			 ////fprintf(logfile,"At line no: %d: type_specifier : VOID \n",line);
+			fprintf(logfile,"At line no: %d: type_specifier : VOID \n",line);
 			variable_type = "void";
 
 			SymbolInfo *x = new SymbolInfo("void" , "void");
 			$$ = x;
-			//fprintf(logfile,"%s\n\n",$$->get_name().c_str());
+			fprintf(logfile,"%s\n\n",$$->get_name().c_str());
 		}
 		 ;
 
@@ -698,11 +764,11 @@ declaration_list : declaration_list COMMA ID
 		{
       //----------------------------assembly generation---------------------------
  			variableListForInit.push_back({$3->get_name()+table.get_current_id()[0],"0"});
- 			//---------------------------------------------------------------------
+ 			//--------------------------------------------------------------------------
 
-			////fprintf(logfile,"At line no: %d: declaration_list : declaration_list COMMA ID\n\n",line);
+			fprintf(logfile,"At line no: %d: declaration_list : declaration_list COMMA ID\n\n",line);
 			$$ = new SymbolInfo((string)$1->get_name()+(string)","+(string)$3->get_name(), "NON_TERMINAL");
-			//fprintf(logfile , "%s,%s\n\n" , $1->get_name().c_str() , $3->get_name().c_str());
+			fprintf(logfile , "%s,%s\n\n" , $1->get_name().c_str() , $3->get_name().c_str());
 
 			/* keeping track of identifier(variable) */
       temp_var.var_name = $3->get_name();
@@ -718,11 +784,11 @@ declaration_list : declaration_list COMMA ID
 		{
       //----------------------------assembly generation---------------------------
  			variableListForInit.push_back({$3->get_name()+table.get_current_id()[0],$5->get_name()});
- 			//---------------------------------------------------------------------
+ 			//---------------------------------------------------------------------------
 
-			////fprintf(logfile,"At line no: %d declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
+			fprintf(logfile,"At line no: %d declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
 			$$ = new SymbolInfo((string)$1->get_name()+(string)","+(string)$3->get_name()+(string)"["+(string)$5->get_name()+(string)"]", "NON_TERMINAL");
-		//	fprintf(logfile , "%s,%s[%s]\n\n" , $1->get_name().c_str() , $3->get_name().c_str() , $5->get_name().c_str());
+			fprintf(logfile , "%s,%s[%s]\n\n" , $1->get_name().c_str() , $3->get_name().c_str() , $5->get_name().c_str());
 
 			/* keeping track of identifier(array) */
       temp_var.var_name = (string)$3->get_name();
@@ -745,8 +811,8 @@ declaration_list : declaration_list COMMA ID
  			variableListForInit.push_back({$1->get_name()+table.get_current_id()[0],"0"});
  			//---------------------------------------------------------------------
 
-			////fprintf(logfile,"At line no: %d declaration_list : ID\n\n",line);
- 		//	fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+			fprintf(logfile,"At line no: %d declaration_list : ID\n\n",line);
+ 			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
  			$$ = new SymbolInfo($1->get_name() ,  "ID");
 
@@ -762,11 +828,11 @@ declaration_list : declaration_list COMMA ID
 		{
       //----------------------------assembly generation---------------------------
  			variableListForInit.push_back({$1->get_name()+table.get_current_id()[0],$3->get_name()});
- 			//---------------------------------------------------------------------
+ 			//--------------------------------------------------------------------------
 
-			//fprintf(logfile , "At line no: %d  declaration_list: ID LTHIRD CONST_INT RTHIRD\n\n",line);
+			fprintf(logfile , "At line no: %d  declaration_list: ID LTHIRD CONST_INT RTHIRD\n\n",line);
 			$$ = new SymbolInfo($1->get_name()+"["+$3->get_name()+"]", "NON_TERMINAL");
-			//fprintf(logfile , "%s[%s]\n\n",$1->get_name().c_str() , $3->get_name().c_str());
+			fprintf(logfile , "%s[%s]\n\n",$1->get_name().c_str() , $3->get_name().c_str());
 
 			temp_var.var_name = $1->get_name();
       stringstream temp_str($3->get_name());
@@ -786,73 +852,74 @@ declaration_list : declaration_list COMMA ID
 statements : statement
     {
        $$ = $1;
-      // fprintf(logfile , "At line no: %d statements : statement\n\n" , line);
-       //fprintf(logfile , "%s\n\n" , $1->get_name().c_str());
-
+       fprintf(logfile , "At line no: %d statements : statement\n\n" , line);
+       fprintf(logfile , "%s\n\n" , $1->get_name().c_str());
     }
 	   | statements statement
     {
       $$ = new SymbolInfo($1->get_name()+$2->get_name() , "NON_TERMINAL");
-    //  fprintf(logfile , "At line no: %d statements : statements statement\n\n" , line);
-    //  fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
-      $$->set_code($1->get_code() + $2->get_code());
+      fprintf(logfile , "At line no: %d statements : statements statement\n\n" , line);
+      fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
+      $$->set_code($1->get_code() + " " + $2->get_code());
+      //cout<<$1->get_code() + " " + $2->get_code();
     }
 	   ;
 
 statement : var_declaration
     {
-      ////fprintf(logfile,"At line no: %d statement : var_declaration\n\n",line);
-			//fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+      fprintf(logfile,"At line no: %d statement : var_declaration\n\n",line);
+			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       $1->setname($1->get_name()+"\n");
   		$$=$1;
     }
 	  | expression_statement
     {
-      ////fprintf(logfile,"At line no: %d statement : expression_statement\n\n",line);
-			//fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+      fprintf(logfile,"At line no: %d statement : expression_statement\n\n",line);
+			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       $1->setname($1->get_name()+"\n");
 			$$=$1;
     }
 	  | compound_statement
     {
-      ////fprintf(logfile,"At line no: %d statement : compound_statement\n\n",line);
-      //fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+      fprintf(logfile,"At line no: %d statement : compound_statement\n\n",line);
+      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
       $$=$1;
     }
 	  | FOR LPAREN expression_statement expression_statement expression RPAREN statement
     {
-      string str="for("+$3->get_name()+$4->get_name()+$5->get_name()+")"+$7->get_name();
-      //$$ = new SymbolInfo(str , "NON_TERMINAL");
-      $$ = $3;
-      string label1=newLabel(), label2=newLabel();
+      string l1=newLabel();
+      string l2=newLabel();
 
-			assemblyCodes=$$->get_code();
-			assemblyCodes+=(label1+":\n");	//REPEAT
+      $$ = $3;
+      assemblyCodes=$$->get_code();
+			assemblyCodes+=(l1+":\n");
 
 			assemblyCodes+=$4->get_code();
 
 			assemblyCodes+=("\tMOV AX, "+$4->get_name()+"\n");
 			assemblyCodes+="\tCMP AX, 0\n";
-			assemblyCodes+="\tJE "+label2+"\n";
+			assemblyCodes+="\tJE "+l2+"\n";
 
 			assemblyCodes+=$7->get_code();
 			assemblyCodes+=$5->get_code();
-			assemblyCodes+="\tJMP "+label1+"\n";
+			assemblyCodes+="\tJMP "+l1+"\n";
 
-			assemblyCodes+=("\t"+label2+":\n");
+			assemblyCodes+=("\t"+l2+":\n");
 
 			$$->set_code(assemblyCodes);
-      //fprintf(logfile,"line no. %d: statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n",line);
-			//fprintf(logfile,"%s\n\n",str.c_str());
+      string str="for("+$3->get_name()+$4->get_name()+$5->get_name()+")"+$7->get_name();
+      fprintf(logfile,"line no. %d: statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n",line);
+			fprintf(logfile,"%s\n\n",str.c_str());
     }
 	  | IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
     {
       string str = "if("+$3->get_name()+")"+$5->get_name();
-      //$$ = new SymbolInfo(str , "statement");
-      ////fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement\n\n",line);
-      //fprintf(logfile,"%s\n\n",str.c_str());
+      fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement\n\n",line);
+      fprintf(logfile,"%s\n\n",str.c_str());
       $$=$3;
+      $$->setname("statement");
+      $$->settype("if");
 
 			string label=newLabel();
 
@@ -865,16 +932,17 @@ statement : var_declaration
 			assemblyCodes+=("\t"+label+":\n");
 
 			$$->set_code(assemblyCodes);
-      $$->setname("statement");$$->settype("if");
 
     }
 	  | IF LPAREN expression RPAREN statement ELSE statement
     {
       string str = "if("+$3->get_name()+")"+$5->get_name()+"else"+$7->get_name();
       //$$ = new SymbolInfo(str , "statement");
-      ////fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
-      //fprintf(logfile,"%s\n\n",str.c_str());
+      fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
+      fprintf(logfile,"%s\n\n",str.c_str());
       $$=$3;
+      //$$->setname("statement");
+      $$->settype("if-else if");
 
 			string else_condition=newLabel();
 			string after_else=newLabel();
@@ -893,15 +961,14 @@ statement : var_declaration
 			assemblyCodes+=("\n\t"+after_else+":\n");
 
 			$$->set_code(assemblyCodes);
-			$$->setname("statement");$$->settype("if-else if");
 
     }
 	  | WHILE LPAREN expression RPAREN statement
     {
       string str = "while("+$3->get_name()+")"+$5->get_name();
       //$$ = new SymbolInfo(str , "statement");
-      ////fprintf(logfile,"At line no: %d statement : WHILE LPAREN expression RPAREN statement\n\n",line);
-      //fprintf(logfile,"%s\n\n",str.c_str());
+      fprintf(logfile,"At line no: %d statement : WHILE LPAREN expression RPAREN statement\n\n",line);
+      fprintf(logfile,"%s\n\n",str.c_str());
       $$=new SymbolInfo("while","loop");
 
 			string label1=newLabel(), label2=newLabel();
@@ -926,6 +993,8 @@ statement : var_declaration
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
     {
       //$$ = new SymbolInfo("printf("+$3->get_name()+");" , "statement");
+      fprintf(logfile,"Line %d: statement : PRINTLN LPAREN ID RPAREN SEMICOLON\n\n",line);
+      fprintf(logfile , "printf(%s);\n\n" , $3->get_name().c_str());
 
       $$=new SymbolInfo("println","nonterminal");
 			assemblyCodes=("\n\tMOV AX, "+$3->get_name()+table.get_current_id()[0]+"\n");
@@ -950,12 +1019,15 @@ statement : var_declaration
     }
 	  | RETURN expression SEMICOLON
     {
+      fprintf(logfile,"Line %d: statement : RETURN expression SEMICOLON\n\n",line);
+      fprintf(logfile , "return %s;\n\n" , $2->get_name().c_str());
+
       $$=new SymbolInfo("return","statement");
 
 			isReturning=true;
 			isReturningType=$2->getVariableType();
 
-			assemblyCodes=$$->get_code();///will have to chk ig
+			assemblyCodes=$2->get_code();///will have to chk ig
 			$$->set_code(assemblyCodes);
     }
 	  ;
@@ -963,22 +1035,32 @@ statement : var_declaration
 expression_statement 	: SEMICOLON
     {
       $$=new SymbolInfo("SEMICOLON","SEMICOLON");
+      fprintf(logfile,"Line %d: expression_statement : SEMICOLON\n",line);
+			fprintf(logfile,";\n\n");
     }
 			| expression SEMICOLON
     {
       $$ = $1;
+      fprintf(logfile,"Line %d: expression_statement : expression SEMICOLON\n\n",line);
+      fprintf(logfile , "%s;\n\n" , $1->get_name().c_str());
     }
+    | expression error
+   {
+     //error_cnt++;
+     yyclearin;
+   }
 			;
 
 variable :
 
     ID
     {
+      fprintf(logfile,"Line %d: variable : ID\n",line);
+      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+
       $$ = $1;
       $$->idx=-1;
       //Semantic : chk if variable is declared before
-
-
       $$->setIdentity("var");
       $$->push_in_var($1->get_name(),"",0);
       SymbolInfo *x=table.Lookup($1->get_name());
@@ -986,21 +1068,12 @@ variable :
 
       $$->asmName=$$->get_name()+table.get_current_id()[0];
 
-/*
-      if(!x){
-        error_cnt++;
-        fprintf(errorfile,"Error at line: %d variable %s not declared in this scope\n\n",line,$1->get_name().c_str());
-      }
-      else{
-        $$->setVariableType(x->getVariableType());
-      }
-*/
     }
 
 	 | ID LTHIRD expression RTHIRD
    {
-     ////fprintf(logfile,"At line no: %d variable : ID LTHIRD expression RTHIRD\n",line);
-		 //fprintf(logfile,"%s[%s]\n\n",$1->get_name().c_str(),$3->get_name().c_str());
+     fprintf(logfile,"At line no: %d variable : ID LTHIRD expression RTHIRD\n",line);
+		 fprintf(logfile,"%s[%s]\n\n",$1->get_name().c_str(),$3->get_name().c_str());
      $$ = new SymbolInfo($1->get_name()+"["+$3->get_name()+"]" , "variable");
 
      $$->setIdentity("array");
@@ -1017,11 +1090,14 @@ variable :
  expression : logic_expression
     {
       $$ = $1;
+      fprintf(logfile,"Line %d: expression : logic_expression\n\n",line);
+			fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     }
 	   | variable ASSIGNOP logic_expression
     {
       $$ = new SymbolInfo($1->get_name()+"="+$3->get_name() , "expression");
-
+      fprintf(logfile,"Line %d: expression : variable ASSIGNOP logic_expression\n\n",line);
+      fprintf(logfile,"%s = %s\n\n",$1->get_name().c_str(),$3->get_name().c_str());
       //semantics
       //todo
       //assign $3's variable_type to $1 after some error chkings
@@ -1099,6 +1175,7 @@ variable :
             error_cnt++;
             fprintf(errorfile , "Error at line: %d Type Mismatch in function returning\n\n",line);
           }
+
         }
       }
 
@@ -1111,26 +1188,28 @@ variable :
 
       //-----------------------------assembly generation--------------------------------
 
+
 			assemblyCodes=$3->get_code()+$1->get_code();
+      if(line==16)cout<<$3->get_code()+$1->get_code()<<"111"<<endl;
       //cout<<$3->asmName<<endl;
 			assemblyCodes+=("\n\tMOV AX, "+$3->asmName+"\n");
 
       string temp=modified_name($1->get_name())+table.get_current_id()[0];
-			if($1->getIdentity()!="array"){                   ///modified
+      $$->setname(temp);
+			$$->asmName=temp;
+
+      //variable
+      if($1->getIdentity()!="array"){
 				assemblyCodes+=("\tMOV "+temp+", AX\n");
 			}
 			//array
-
 			else{
         int idx=get_index($1->get_name());
 				if(idx==0)assemblyCodes+=("\tMOV "+temp+", AX\n");
         else assemblyCodes+=("\tMOV "+temp+"+"+to_str(idx)+"*2, AX\n");
 			}
-
 			$$->set_code(assemblyCodes);
-			$$->setname(temp);
-			$$->asmName=temp;
-
+      if(line==16)cout<<assemblyCodes<<endl;
     }
 	   ;
 
@@ -1138,13 +1217,16 @@ logic_expression : rel_expression
     {
       $$ = $1;
       $$->setVariableType("int");
+      fprintf(logfile,"Line %d: logic_expression : rel_expression\n\n",line);
+      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
+
       //cout<<$1->asmName<<endl;
     }
 		 | rel_expression LOGICOP rel_expression
     {
       $$ = $1;
-      ////fprintf(logfile,"At line no: %d logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
-      //fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
+      fprintf(logfile,"At line no: %d logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
+      fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
       /*semantic
       both $1 and $3 must be of type non void
@@ -1163,6 +1245,8 @@ logic_expression : rel_expression
 			string temp=newTemp();
 			string label1=newLabel();
 			string label2=newLabel();
+      $$->setname(temp);
+			$$->asmName=temp;
 
 			assemblyCodes+=("\n\tMOV AX, "+$1->asmName+"\n");
 			assemblyCodes+=("\tMOV BX, "+$3->asmName+"\n");
@@ -1204,9 +1288,8 @@ logic_expression : rel_expression
 			}
 
 			$$->set_code(assemblyCodes);
-			$$->setname(temp);
-			$$->asmName=temp;
-			//---------------------------------------------------
+
+			//-------------------------------------------------------------------------
 
     }
 		 ;
@@ -1214,11 +1297,16 @@ logic_expression : rel_expression
 rel_expression	: simple_expression
    {
      $$ = $1;
+     fprintf(logfile,"Line %d: rel_expression	: simple_expression\n\n",line);
+     fprintf(logfile,"%s\n\n",$1->get_name().c_str());
      $$->setVariableType("int");
    }
 		| simple_expression RELOP simple_expression
    {
      $$ = $1;
+     fprintf(logfile,"Line %d: rel_expression : simple_expression RELOP simple_expression\n\n",line);
+     fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
+
      /*semantic
      both $1 and $3 must be of type non void
      $$ must be set to type int
@@ -1285,11 +1373,15 @@ rel_expression	: simple_expression
 simple_expression : term
   {
     $$ = $1;
+    fprintf(logfile,"Line %d: simple_expression : term\n\n",line);
+    fprintf(logfile,"%s\n\n",$1->get_name().c_str());
 
   }
 		  | simple_expression ADDOP term
   {
     $$ = $1;
+    fprintf(logfile,"Line %d: simple_expression : simple_expression ADDOP term\n\n",line);
+    fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 
     if($1->getVariableType()=="float" || $3->getVariableType()=="float")
 				$$->setVariableType("float");
@@ -1327,10 +1419,14 @@ simple_expression : term
 term :	unary_expression
     {
       $$ = $1;
+      fprintf(logfile,"Line %d: term :	unary_expression\n\n",line);
+      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
     }
      |  term MULOP unary_expression
     {
       $$=$1;
+      fprintf(logfile,"Line %d: term : term MULOP unary_expression\n\n",line);
+      fprintf(logfile,"%s%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str(),$3->get_name().c_str());
 			//------------------------------------------------------------------------
 			//code generation
       assemblyCodes=$$->get_code();
@@ -1416,8 +1512,8 @@ unary_expression : ADDOP unary_expression
         }
       }
 
-      ////fprintf(logfile,"At line no: %d unary_expression : ADDOP unary_expression\n",line);
-		//fprintf(logfile,"%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str());
+      fprintf(logfile,"At line no: %d unary_expression : ADDOP unary_expression\n",line);
+		  fprintf(logfile,"%s%s\n\n",$1->get_name().c_str(),$2->get_name().c_str());
 
 			$$=$2;
 
@@ -1475,6 +1571,8 @@ unary_expression : ADDOP unary_expression
 		 | factor
      {
        $$ = $1;
+       fprintf(logfile,"Line %d: unary_expression :	factor\n\n",line);
+       fprintf(logfile,"%s\n\n",$1->get_name().c_str());
      }
 
 		 ;
@@ -1482,7 +1580,8 @@ unary_expression : ADDOP unary_expression
 factor	: variable
     {
       $$ = $1;
-
+      fprintf(logfile,"Line %d: factor : variable\n\n",line);
+      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
       //for code generation purpose we concatenate the current id with the variable name
       if($1->getIdentity()=="array"){
         int idx = get_index($$->get_name());
@@ -1533,8 +1632,11 @@ factor	: variable
     }
 	| ID LPAREN argument_list RPAREN
     {
-      $$ = new SymbolInfo("func_call","factor");
+      $$ = new SymbolInfo($1->get_name() + "(" + $3->get_name() + ")" , "factor");
       $$->set_is_func(true);
+
+      fprintf(logfile,"Line %d: factor : ID LPAREN argument_list RPAREN\n\n",line);
+      fprintf(logfile,"%s(%s)\n\n",$1->get_name().c_str(),$3->get_name().c_str());
 
       //semantic
       //chk if id is in func_list
@@ -1578,7 +1680,6 @@ factor	: variable
         }
         //cout<<$1->get_name()<<" "<<already_error_in_arg<<endl;
         if(!matched ){
-          //
           error_cnt++;
           fprintf(errorfile , "Error at line: %d Total number of arguments mismatch in function %s\n\n",line,$1->get_name().c_str());
           fprintf(logfile , "Error at line: %d Total number of arguments mismatch in function %s\n\n",line,$1->get_name().c_str());
@@ -1586,6 +1687,12 @@ factor	: variable
         else{
           assemblyCodes+="\tCALL "+$1->get_name()+"\n";
 					$$->set_code(assemblyCodes);
+
+          string fnm = modified_name_while_func_calling($1->get_name());
+          function_ f = get_func(fnm);
+          $$->asmName = "T" + to_string(f.return_reg_no);
+          cout<<f.f_name<<" "<<f.return_reg_no<<endl;
+
         }
       }
 

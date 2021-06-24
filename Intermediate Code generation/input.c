@@ -1,12 +1,14 @@
 int main(){
-    int a,b,c[3];
-    a=1*(2+3)%3;
-    b= 1<5;
-    c[0]=2;
-    if(a && b)
-        c[0]++;
-    else
-        c[1]=c[0];
+    int a,b,c,i;
+    b=0;
+	  c=1;
+    for(i=0;i<4;i++){
+        a=3;
+        while(a--){
+            b++;
+        }
+    }
     println(a);
     println(b);
+    println(c);
 }
