@@ -252,7 +252,6 @@ string print_function(){
 //inside the modify_proc method and return it.
 int get_first_index(string str, string s)
 {
-
     bool flag = false;
     for (int i = 0; i < str.length(); i++) {
         if (str.substr(i, s.length()) == s) {
@@ -303,7 +302,75 @@ string newTemp()
 	variableListForInit.push_back({temp,"0"});
 	return temp;
 }
-int f1,g1;
+
+///return true for cases:
+///s1 := MOV AX, a1
+///s2 := MOV a1, AX
+bool check_if_equivalent_command(string s1 , string s2)
+{
+  int len1 = s1.size();
+  int len2 = s2.size();
+
+  int i=0;
+  //getting the first M from s1 cause s1 might contain \t at the beginning too.
+  for(;i<len1;i++){
+    if(s1[i]=='M')break;
+  }
+  if(i==len1)return false;
+  if(s1.substr(i , 3)!="MOV")return false;
+  int i1 = i;
+
+  i=0;
+  for(;i<len2;i++){
+    if(s2[i]=='M')break;
+  }
+  if(i==len2)return false;
+  if(s2.substr(i , 3)!="MOV")return false;
+  int i2 = i;
+
+  string src1="",dest1="",src2="",dest2="";
+
+  dest1 = s1.substr(i1+4 , 2);
+  src1 = s1.substr(i1+8 , 2);
+
+  dest2 = s2.substr(i2+4 , 2);
+  src2 = s2.substr(i2+8 , 2);
+
+  //cout<<src1<<" "<<dest1<<" "<<src2<<" "<<dest2<<endl;
+
+  if(src1==dest2 and src2==dest1)return true;
+  else return false;
+}
+
+void optimize_code(FILE *basecode){
+   optimized_asmCode=fopen("optimized_code.asm","w");
+   char *line = NULL;
+   size_t n = 0;
+   ssize_t if_read;
+	 vector<string>v;
+   while ((if_read = getline(&line, &n, basecode)) != -1) {
+     v.push_back(string(line));
+   }
+   int sz = v.size();
+   int to_be_removed[sz];
+   for(int i=0;i<sz;i++){
+     to_be_removed[i] = 0;
+   }
+
+   for(int i=0;i<sz-1;i++){
+     if(check_if_equivalent_command(v[i] ,v[i+1])){
+       to_be_removed[i+1] = 1;
+     }
+   }
+
+   for(int i=0;i<sz;i++){
+     if(to_be_removed[i]==0){
+       fprintf(optimized_asmCode , "%s" , v[i].c_str());
+     }
+   }
+   fclose(optimized_asmCode);
+}
+
 %}
 
 %union {
@@ -344,17 +411,21 @@ start : program
 		 			else
 		 				init+=("\t"+variableListForInit[i].first+" DW "+variableListForInit[i].second+" DUP(?)\n");
 		 		}
-        //print_func_list();
-		 		init+=".CODE\n";
 
+		 		init+=".CODE\n";
         ///adding print function
 		 		string print_func = print_function();
         init+=print_func;
         init+=assembly_procs;
-        //cout<<assemblyCodes<<endl;
+
 		 		fprintf(asmCode,"%s",init.c_str());
 		 		fprintf(asmCode,"%s",$$->get_code().c_str());
-		 	}
+        fclose(asmCode);
+        ///write optimized code
+        FILE *basecode = fopen("code.asm" , "r");
+        optimize_code(basecode);
+        fclose(basecode);
+      }
     }
 	;
 
@@ -542,13 +613,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       //-------------------------------Assembly done-------------------------------------------
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+")"+$7->get_name()+"\n\n", "NON_TERMINAL");
       $$->set_code(assemblyCodes);
-      //debugging
-      //if($2->get_name()!="main"){
-      //  cout<<assemblyCodes<<endl;
-      //}
-      cout<<"xxx\n"<<modify_proc($2->get_name() , assemblyCodes)<<endl;
+
       if($2->get_name()!="main")assembly_procs += modify_proc($2->get_name() , assemblyCodes);
-      print_func_list();
   }
 		| type_specifier ID LPAREN RPAREN
     {
@@ -614,7 +680,6 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"()"+$6->get_name()+"\n\n", "NON_TERMINAL");
       $$->set_code(assemblyCodes);
       if($2->get_name()!="main")assembly_procs += modify_proc($2->get_name() , assemblyCodes);
-      print_func_list();
 	}
 
 	 	;
@@ -861,7 +926,6 @@ statements : statement
       fprintf(logfile , "At line no: %d statements : statements statement\n\n" , line);
       fprintf(logfile , "%s %s\n\n" , $1->get_name().c_str(),$2->get_name().c_str());
       $$->set_code($1->get_code() + " " + $2->get_code());
-      //cout<<$1->get_code() + " " + $2->get_code();
     }
 	   ;
 
@@ -1190,8 +1254,6 @@ variable :
 
 
 			assemblyCodes=$3->get_code()+$1->get_code();
-      if(line==16)cout<<$3->get_code()+$1->get_code()<<"111"<<endl;
-      //cout<<$3->asmName<<endl;
 			assemblyCodes+=("\n\tMOV AX, "+$3->asmName+"\n");
 
       string temp=modified_name($1->get_name())+table.get_current_id()[0];
@@ -1209,7 +1271,6 @@ variable :
         else assemblyCodes+=("\tMOV "+temp+"+"+to_str(idx)+"*2, AX\n");
 			}
 			$$->set_code(assemblyCodes);
-      if(line==16)cout<<assemblyCodes<<endl;
     }
 	   ;
 
@@ -1219,8 +1280,6 @@ logic_expression : rel_expression
       $$->setVariableType("int");
       fprintf(logfile,"Line %d: logic_expression : rel_expression\n\n",line);
       fprintf(logfile,"%s\n\n",$1->get_name().c_str());
-
-      //cout<<$1->asmName<<endl;
     }
 		 | rel_expression LOGICOP rel_expression
     {
@@ -1658,9 +1717,7 @@ factor	: variable
           for(int i=0;i<f.params.size();i++){
             if($3->arg_list[i].already_error_in_arg){
               already_error_in_arg = true;
-              //break;
             }
-            //cout<<f.params[i].first<<" "<<$3->arg_list[i].name<<" "<<$3->arg_list[i].type<<endl;
             if($3->arg_list[i].sz>0){
               if($3->get_name()==modified_name($3->get_name())){
                 matched = false;
@@ -1678,7 +1735,7 @@ factor	: variable
             }
           }
         }
-        //cout<<$1->get_name()<<" "<<already_error_in_arg<<endl;
+
         if(!matched ){
           error_cnt++;
           fprintf(errorfile , "Error at line: %d Total number of arguments mismatch in function %s\n\n",line,$1->get_name().c_str());
@@ -1691,7 +1748,6 @@ factor	: variable
           string fnm = modified_name_while_func_calling($1->get_name());
           function_ f = get_func(fnm);
           $$->asmName = "T" + to_string(f.return_reg_no);
-          cout<<f.f_name<<" "<<f.return_reg_no<<endl;
 
         }
       }
@@ -1851,7 +1907,6 @@ arguments : arguments COMMA logic_expression
             }
           }
           if(!isara){
-            //cout<<$1->getVariableType()<<endl;
             $$->push_in_arg($1->get_name() , $1->getVariableType() , 0);
           }
         }
@@ -1873,11 +1928,8 @@ int main(int argc,char *argv[])
   asmCode=fopen(argv[2],"w");
 	fclose(asmCode);
 
-	optimized_asmCode=fopen(argv[3],"w");
-	fclose(optimized_asmCode);
-
   asmCode=fopen(argv[2],"a");
-	//optimized_asmCode=fopen(argv[4],"a");
+
 
 	yyparse();
 
