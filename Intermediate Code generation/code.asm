@@ -1,12 +1,12 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
-	T1 DW ?
-	x1 DW ?
-	T2 DW ?
-	T3 DW ?
 	a1 DW ?
 	b1 DW ?
+	c1 DW ?
+	i1 DW ?
+	T1 DW ?
+	T2 DW ?
 .CODE
 PRINT_ID PROC
 
@@ -68,55 +68,6 @@ PRINT_ID PROC
 	RET
 PRINT_ID ENDP
 
-f PROC
-
-	PUSH AX
-	PUSH BX
-	PUSH CX
-	PUSH DX
-	PUSH a1
-
-	MOV AX, 2
-	POP BX
-	MUL BX
-	MOV T1, AX
-
-	POP DX
-	POP CX
-	POP BX
-	POP AX
-RET
-f ENDP
-
-g PROC
-
-	PUSH AX
-	PUSH BX
-	PUSH CX
-	PUSH DX
-	PUSH b1
-	PUSH a1
- 
-	POP AX
-	MOV DX, AX
- 
-	CALL f
-
-	MOV AX, T1
-	ADD AX, DX
-	MOV T2, AX
-
-	MOV AX, T2
-	POP BX
-	ADD AX, BX
-	MOV T3, AX
- 	POP DX
-	POP CX
-	POP BX
-	POP AX
-RET
-g ENDP
-
 MAIN PROC
 
 	;INITIALIZE DATA SEGMENT
@@ -124,25 +75,62 @@ MAIN PROC
 	MOV DS, AX
 
  
+	MOV AX, 0
+	MOV b1, AX
+ 
 	MOV AX, 1
+	MOV c1, AX
+ 
+	MOV AX, 0
+	MOV i1, AX
+;-------for loop starts--------
+L5:
+
+	MOV AX, i1
+	CMP AX, 4
+	JL L1
+
+	MOV T1, 0
+	JMP L2
+
+	L1:
+	MOV T1, 1
+
+	L2:
+	MOV AX, T1
+	CMP AX, 0
+	JE L6
+
+	MOV AX, 3
 	MOV a1, AX
- 
-	MOV AX, 2
-	MOV b1, AX
- 
+ L3:
 	MOV AX, a1
+	MOV T2, AX
+	DEC AX
 	MOV a1, AX
-
+	MOV AX, T2
+	CMP AX, 0
+	JE L4
 	MOV AX, b1
+	INC AX
 	MOV b1, AX
-	CALL g
-
-	MOV AX, T3
-	MOV a1, AX
+	JMP L3
+	L4:
+	MOV AX, i1
+	INC AX
+	MOV i1, AX
+	JMP L5
+	L6:
  
 	MOV AX, a1
 	CALL PRINT_ID
  
+	MOV AX, b1
+	CALL PRINT_ID
+ 
+	MOV AX, c1
+	CALL PRINT_ID
+
 	MOV AX, 4CH
 	INT 21H
 MAIN ENDP

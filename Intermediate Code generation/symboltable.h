@@ -72,6 +72,10 @@ public:
       return code;
     }
 
+    void add_code(string str){
+      code += str;
+    }
+
     void set_already_error_in_param(){
       already_error_in_param = true;
     }

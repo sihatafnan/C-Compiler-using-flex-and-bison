@@ -1,19 +1,14 @@
-int f(int a){
-    return 2*a;
-    a=9;
-}
-
-int g(int a, int b){
-    int x;
-    x=f(a)+a+b;
-    return x;
-}
-
 int main(){
-    int a,b;
-    a=1;
-    b=2;
-    a=g(a,b);
+    int a,b,c,i;
+    b=0;
+	  c=1;
+    for(i=0;i<4;i++){
+        a=3;
+        while(a--){
+            b++;
+        }
+    }
     println(a);
-    return 0;
+    println(b);
+    println(c);
 }
