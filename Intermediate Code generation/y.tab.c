@@ -103,7 +103,6 @@ extern int line;
 extern int error_cnt;
 
 string codes, assembly_codes;
-string var_type;
 
 struct var{
     string var_name;
@@ -519,7 +518,7 @@ void optimize_code(FILE *basecode){
 }
 
 
-#line 523 "y.tab.c"
+#line 522 "y.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -652,11 +651,11 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 453 "parser.y"
+#line 452 "parser.y"
 
      SymbolInfo *symbol;
 
-#line 660 "y.tab.c"
+#line 659 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1126,13 +1125,13 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   476,   476,   507,   515,   524,   530,   536,   545,   568,
-     594,   659,   593,   711,   728,   710,   781,   792,   802,   812,
-     825,   833,   842,   892,   901,   910,   921,   941,   966,   985,
-    1010,  1016,  1025,  1032,  1039,  1046,  1073,  1096,  1125,  1153,
-    1181,  1191,  1197,  1203,  1212,  1229,  1246,  1252,  1369,  1376,
-    1447,  1454,  1523,  1530,  1569,  1575,  1652,  1697,  1711,  1719,
-    1772,  1836,  1846,  1856,  1866,  1905,  1944,  1949,  1954,  1975
+       0,   475,   475,   506,   514,   523,   529,   535,   544,   567,
+     593,   658,   592,   710,   727,   709,   780,   791,   801,   811,
+     824,   832,   841,   891,   898,   905,   914,   934,   959,   978,
+    1003,  1009,  1018,  1025,  1032,  1039,  1066,  1089,  1118,  1146,
+    1174,  1184,  1190,  1196,  1205,  1222,  1239,  1245,  1362,  1369,
+    1440,  1447,  1516,  1523,  1562,  1568,  1645,  1690,  1704,  1712,
+    1765,  1829,  1839,  1849,  1859,  1898,  1937,  1942,  1947,  1968
 };
 #endif
 
@@ -1801,7 +1800,7 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* start: program  */
-#line 477 "parser.y"
+#line 476 "parser.y"
         {
     (yyval.symbol)=(yyvsp[0].symbol);
     //$$->set_code(assembly_codes);
@@ -1830,11 +1829,11 @@ yyreduce:
         fclose(basecode);
       }
     }
-#line 1834 "y.tab.c"
+#line 1833 "y.tab.c"
     break;
 
   case 3: /* program: program unit  */
-#line 508 "parser.y"
+#line 507 "parser.y"
         {
 		(yyval.symbol) = new SymbolInfo((string)(yyvsp[-1].symbol)->get_name()+(string)(yyvsp[0].symbol)->get_name(), "NON_TERMINAL");;
     (yyval.symbol)->set_code((yyvsp[-1].symbol)->get_code() + (yyvsp[0].symbol)->get_code());
@@ -1842,52 +1841,52 @@ yyreduce:
     fprintf(logfile,"Line %d:  program : program unit\n\n",line);
     fprintf(logfile , "%s%s\n\n" , (yyvsp[-1].symbol)->get_name().c_str() , (yyvsp[0].symbol)->get_name().c_str());
 	}
-#line 1846 "y.tab.c"
+#line 1845 "y.tab.c"
     break;
 
   case 4: /* program: unit  */
-#line 516 "parser.y"
+#line 515 "parser.y"
         {
     (yyval.symbol)=(yyvsp[0].symbol);
     fprintf(logfile,"Line %d: program : unit\n\n",line);
 		fprintf(logfile,"%s\n",(yyvsp[0].symbol)->get_name().c_str());
 		//$$ = new SymbolInfo($1->get_name()+"\n", "NON_TERMINAL");
 	}
-#line 1857 "y.tab.c"
+#line 1856 "y.tab.c"
     break;
 
   case 5: /* unit: var_declaration  */
-#line 525 "parser.y"
+#line 524 "parser.y"
         {
 		(yyval.symbol) = (yyvsp[0].symbol);
     fprintf(logfile,"Line %d: unit : var_declaration\n\n",line);
 		fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
 	}
-#line 1867 "y.tab.c"
+#line 1866 "y.tab.c"
     break;
 
   case 6: /* unit: func_declaration  */
-#line 531 "parser.y"
+#line 530 "parser.y"
         {
 		(yyval.symbol) = (yyvsp[0].symbol);
     fprintf(logfile,"Line %d: unit : func_declaration\n\n",line);
 		fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
 	}
-#line 1877 "y.tab.c"
+#line 1876 "y.tab.c"
     break;
 
   case 7: /* unit: func_definition  */
-#line 537 "parser.y"
+#line 536 "parser.y"
         {
 		(yyval.symbol) = (yyvsp[0].symbol);
     fprintf(logfile,"Line %d: unit : func_definition\n\n",line);
 		fprintf(logfile,"%s\n",(yyvsp[0].symbol)->get_name().c_str());
 	}
-#line 1887 "y.tab.c"
+#line 1886 "y.tab.c"
     break;
 
   case 8: /* func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON  */
-#line 546 "parser.y"
+#line 545 "parser.y"
         {
     (yyval.symbol) = new SymbolInfo((yyvsp[-5].symbol)->get_name()+" "+(yyvsp[-4].symbol)->get_name()+"("+(yyvsp[-2].symbol)->get_name()+");", "NON_TERMINAL");
     fprintf(logfile , "Line %d: func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n\n",line);
@@ -1910,11 +1909,11 @@ yyreduce:
     }
 
 	}
-#line 1914 "y.tab.c"
+#line 1913 "y.tab.c"
     break;
 
   case 9: /* func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON  */
-#line 569 "parser.y"
+#line 568 "parser.y"
         {
 		(yyval.symbol) = new SymbolInfo((yyvsp[-4].symbol)->get_name()+" "+(yyvsp[-3].symbol)->get_name()+"();", "NON_TERMINAL");
 		fprintf(logfile , "At line no: %d func_declaration: type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
@@ -1937,11 +1936,11 @@ yyreduce:
     }
 
 	}
-#line 1941 "y.tab.c"
+#line 1940 "y.tab.c"
     break;
 
   case 10: /* $@1: %empty  */
-#line 594 "parser.y"
+#line 593 "parser.y"
   {
     //chking if invalid params given
     if((yyvsp[-1].symbol)->get_name()=="int" or (yyvsp[-1].symbol)->get_name()=="float"){
@@ -2008,17 +2007,17 @@ yyreduce:
     }
 
   }
-#line 2012 "y.tab.c"
+#line 2011 "y.tab.c"
     break;
 
   case 11: /* $@2: %empty  */
-#line 659 "parser.y"
+#line 658 "parser.y"
                        {table.printall(logfile); table.Exit_Scope(logfile);var_list.clear();}
-#line 2018 "y.tab.c"
+#line 2017 "y.tab.c"
     break;
 
   case 12: /* func_definition: type_specifier ID LPAREN parameter_list RPAREN $@1 compound_statement $@2  */
-#line 661 "parser.y"
+#line 660 "parser.y"
   {    insert_in_func_list((yyvsp[-6].symbol)->get_name() , (yyvsp[-4].symbol)->param , (yyvsp[-7].symbol)->get_name() , tempCount-1);
       //-------------------------------Assembly generation------------------------------------
       (yyval.symbol) = new SymbolInfo((yyvsp[-7].symbol)->get_name()+" "+(yyvsp[-6].symbol)->get_name()+"("+(yyvsp[-4].symbol)->get_name()+")"+(yyvsp[-1].symbol)->get_name()+"\n\n", "NON_TERMINAL");
@@ -2068,11 +2067,11 @@ yyreduce:
       string final = modify_proc((yyvsp[-6].symbol)->get_name() , str);
       if((yyvsp[-6].symbol)->get_name()!="main")assembly_procs += final;
   }
-#line 2072 "y.tab.c"
+#line 2071 "y.tab.c"
     break;
 
   case 13: /* $@3: %empty  */
-#line 711 "parser.y"
+#line 710 "parser.y"
     {
       //current_return_type = $1->get_name();
       /* checking whether already declared or not */
@@ -2090,17 +2089,17 @@ yyreduce:
       table.Enter_Scope(logfile);
 
     }
-#line 2094 "y.tab.c"
+#line 2093 "y.tab.c"
     break;
 
   case 14: /* $@4: %empty  */
-#line 728 "parser.y"
+#line 727 "parser.y"
                        {table.printall(logfile);table.Exit_Scope(logfile);var_list.clear();}
-#line 2100 "y.tab.c"
+#line 2099 "y.tab.c"
     break;
 
   case 15: /* func_definition: type_specifier ID LPAREN RPAREN $@3 compound_statement $@4  */
-#line 729 "parser.y"
+#line 728 "parser.y"
         {
       insert_in_func_list((yyvsp[-5].symbol)->get_name() , (yyvsp[-6].symbol)->get_name());
       fprintf(logfile , "Line %d: func_definition : type_specifier ID LPAREN RPAREN compound_statement\n\n" , line);
@@ -2149,11 +2148,11 @@ yyreduce:
 
       if((yyvsp[-5].symbol)->get_name()!="main")assembly_procs += modify_proc((yyvsp[-5].symbol)->get_name() , assembly_codes);
 	}
-#line 2153 "y.tab.c"
+#line 2152 "y.tab.c"
     break;
 
   case 16: /* parameter_list: parameter_list COMMA type_specifier ID  */
-#line 782 "parser.y"
+#line 781 "parser.y"
                 {
 			(yyval.symbol) = new SymbolInfo((yyvsp[-3].symbol)->get_name()+","+(yyvsp[-1].symbol)->get_name()+" "+(yyvsp[0].symbol)->get_name(), "NON_TERMINAL");
 			fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier ID\n\n",line);
@@ -2164,11 +2163,11 @@ yyreduce:
 			(yyval.symbol)->push_in_param((yyvsp[0].symbol)->get_name() , (yyvsp[-1].symbol)->get_name());
 
 		}
-#line 2168 "y.tab.c"
+#line 2167 "y.tab.c"
     break;
 
   case 17: /* parameter_list: parameter_list COMMA type_specifier  */
-#line 793 "parser.y"
+#line 792 "parser.y"
                 {
 			(yyval.symbol) = new SymbolInfo((yyvsp[-2].symbol)->get_name()+","+(yyvsp[0].symbol)->get_name(), "NON_TERMINAL");
 			fprintf(logfile,"At line no: %d parameter_list  : parameter_list COMMA type_specifier\n\n",line);
@@ -2178,11 +2177,11 @@ yyreduce:
       (yyval.symbol)->param = (yyvsp[-2].symbol)->param;
 			(yyval.symbol)->push_in_param("", (yyvsp[0].symbol)->get_name());
 		}
-#line 2182 "y.tab.c"
+#line 2181 "y.tab.c"
     break;
 
   case 18: /* parameter_list: type_specifier ID  */
-#line 803 "parser.y"
+#line 802 "parser.y"
                 {
 			(yyval.symbol) = new SymbolInfo((yyvsp[-1].symbol)->get_name()+" "+(yyvsp[0].symbol)->get_name(), "NON_TERMINAL");
 			fprintf(logfile,"At line no: %d parameter_list  : type_specifier ID\n\n",line);
@@ -2192,11 +2191,11 @@ yyreduce:
 
 			(yyval.symbol)->push_in_param((yyvsp[0].symbol)->get_name() ,(yyvsp[-1].symbol)->get_name());
 		}
-#line 2196 "y.tab.c"
+#line 2195 "y.tab.c"
     break;
 
   case 19: /* parameter_list: type_specifier  */
-#line 813 "parser.y"
+#line 812 "parser.y"
                 {
 			(yyval.symbol) = new SymbolInfo((yyvsp[0].symbol)->get_name(), "NON_TERMINAL");
 			fprintf(logfile,"At line no: %d parameter_list  : type_specifier\n\n",line);
@@ -2206,11 +2205,11 @@ yyreduce:
 
 			(yyval.symbol)->push_in_param( "" , (yyvsp[0].symbol)->get_name());
 		}
-#line 2210 "y.tab.c"
+#line 2209 "y.tab.c"
     break;
 
   case 20: /* compound_statement: LCURL statements RCURL  */
-#line 826 "parser.y"
+#line 825 "parser.y"
   {
       (yyval.symbol)=(yyvsp[-1].symbol);
       //$$ = new SymbolInfo("{\n"+$2->get_name()+"\n}"+"\n\n", "NON_TERMINAL");
@@ -2218,22 +2217,22 @@ yyreduce:
 			fprintf(logfile,"{\n%s\n}\n\n",(yyvsp[-1].symbol)->get_name().c_str());
 
   }
-#line 2222 "y.tab.c"
+#line 2221 "y.tab.c"
     break;
 
   case 21: /* compound_statement: LCURL RCURL  */
-#line 834 "parser.y"
+#line 833 "parser.y"
   {
     (yyval.symbol) = new SymbolInfo("{\n}", "NON_TERMINAL");
     fprintf(logfile,"At line no: %d compound_statement : LCURL RCURL\n\n",line);
     fprintf(logfile,"{}\n\n");
 
   }
-#line 2233 "y.tab.c"
+#line 2232 "y.tab.c"
     break;
 
   case 22: /* var_declaration: type_specifier declaration_list SEMICOLON  */
-#line 843 "parser.y"
+#line 842 "parser.y"
                 {
 			fprintf(logfile,"At line no: %d var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
 			fprintf(logfile,"%s %s;\n\n",(yyvsp[-2].symbol)->get_name().c_str(),(yyvsp[-1].symbol)->get_name().c_str());
@@ -2275,50 +2274,44 @@ yyreduce:
 
 			//var_list.clear();
 		}
-#line 2279 "y.tab.c"
+#line 2278 "y.tab.c"
     break;
 
   case 23: /* type_specifier: INT  */
-#line 893 "parser.y"
+#line 892 "parser.y"
                 {
 			fprintf(logfile,"At line no: %d: type_specifier : INT \n\n",line);
-			var_type = "int";
-
 			SymbolInfo *x = new SymbolInfo("int" , "int");
 			(yyval.symbol) = x;
 			fprintf(logfile,"%s\n\n",(yyval.symbol)->get_name().c_str());
 		}
-#line 2292 "y.tab.c"
+#line 2289 "y.tab.c"
     break;
 
   case 24: /* type_specifier: FLOAT  */
-#line 902 "parser.y"
+#line 899 "parser.y"
                 {
 			fprintf(logfile,"At line no: %d: type_specifier : FLOAT \n",line);
-			var_type = "float";
-
 			SymbolInfo *x = new SymbolInfo("float" , "float");
 			(yyval.symbol) = x;
 			fprintf(logfile,"%s\n\n",(yyval.symbol)->get_name().c_str());
 		}
-#line 2305 "y.tab.c"
+#line 2300 "y.tab.c"
     break;
 
   case 25: /* type_specifier: VOID  */
-#line 911 "parser.y"
+#line 906 "parser.y"
                 {
 			fprintf(logfile,"At line no: %d: type_specifier : VOID \n",line);
-			var_type = "void";
-
 			SymbolInfo *x = new SymbolInfo("void" , "void");
 			(yyval.symbol) = x;
 			fprintf(logfile,"%s\n\n",(yyval.symbol)->get_name().c_str());
 		}
-#line 2318 "y.tab.c"
+#line 2311 "y.tab.c"
     break;
 
   case 26: /* declaration_list: declaration_list COMMA ID  */
-#line 922 "parser.y"
+#line 915 "parser.y"
                 {
       //----------------------------assembly generation---------------------------
  			variableList_to_be_Initialized.push_back({(yyvsp[0].symbol)->get_name()+table.get_current_id()[0],"0"});
@@ -2338,11 +2331,11 @@ yyreduce:
       (yyval.symbol)->push_in_var((yyvsp[0].symbol)->get_name() , "" , 0);
 
 		}
-#line 2342 "y.tab.c"
+#line 2335 "y.tab.c"
     break;
 
   case 27: /* declaration_list: declaration_list COMMA ID LTHIRD CONST_INT RTHIRD  */
-#line 942 "parser.y"
+#line 935 "parser.y"
                 {
       //----------------------------assembly generation---------------------------
  			variableList_to_be_Initialized.push_back({(yyvsp[-3].symbol)->get_name()+table.get_current_id()[0],(yyvsp[-1].symbol)->get_name()});
@@ -2366,11 +2359,11 @@ yyreduce:
       (yyval.symbol)->push_in_var((yyvsp[-3].symbol)->get_name() , "" , sz);
 
 		}
-#line 2370 "y.tab.c"
+#line 2363 "y.tab.c"
     break;
 
   case 28: /* declaration_list: ID  */
-#line 967 "parser.y"
+#line 960 "parser.y"
                 {
       //----------------------------assembly generation---------------------------
  			variableList_to_be_Initialized.push_back({(yyvsp[0].symbol)->get_name()+table.get_current_id()[0],"0"});
@@ -2389,11 +2382,11 @@ yyreduce:
       (yyval.symbol)->push_in_var((yyvsp[0].symbol)->get_name() , "" , 0);
 
 		}
-#line 2393 "y.tab.c"
+#line 2386 "y.tab.c"
     break;
 
   case 29: /* declaration_list: ID LTHIRD CONST_INT RTHIRD  */
-#line 986 "parser.y"
+#line 979 "parser.y"
                 {
       //----------------------------assembly generation---------------------------
  			variableList_to_be_Initialized.push_back({(yyvsp[-3].symbol)->get_name()+table.get_current_id()[0],(yyvsp[-1].symbol)->get_name()});
@@ -2415,65 +2408,65 @@ yyreduce:
       (yyval.symbol)->push_in_var((yyvsp[-3].symbol)->get_name() , "" , sz);
 
 		}
-#line 2419 "y.tab.c"
+#line 2412 "y.tab.c"
     break;
 
   case 30: /* statements: statement  */
-#line 1011 "parser.y"
+#line 1004 "parser.y"
     {
        (yyval.symbol) = (yyvsp[0].symbol);
        fprintf(logfile , "At line no: %d statements : statement\n\n" , line);
        fprintf(logfile , "%s\n\n" , (yyvsp[0].symbol)->get_name().c_str());
     }
-#line 2429 "y.tab.c"
+#line 2422 "y.tab.c"
     break;
 
   case 31: /* statements: statements statement  */
-#line 1017 "parser.y"
+#line 1010 "parser.y"
     {
       (yyval.symbol) = new SymbolInfo((yyvsp[-1].symbol)->get_name()+(yyvsp[0].symbol)->get_name() , "NON_TERMINAL");
       fprintf(logfile , "At line no: %d statements : statements statement\n\n" , line);
       fprintf(logfile , "%s %s\n\n" , (yyvsp[-1].symbol)->get_name().c_str(),(yyvsp[0].symbol)->get_name().c_str());
       (yyval.symbol)->set_code((yyvsp[-1].symbol)->get_code() + " " + (yyvsp[0].symbol)->get_code());
     }
-#line 2440 "y.tab.c"
+#line 2433 "y.tab.c"
     break;
 
   case 32: /* statement: var_declaration  */
-#line 1026 "parser.y"
+#line 1019 "parser.y"
     {
       fprintf(logfile,"At line no: %d statement : var_declaration\n\n",line);
 			fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
       (yyvsp[0].symbol)->setname((yyvsp[0].symbol)->get_name()+"\n");
   		(yyval.symbol)=(yyvsp[0].symbol);
     }
-#line 2451 "y.tab.c"
+#line 2444 "y.tab.c"
     break;
 
   case 33: /* statement: expression_statement  */
-#line 1033 "parser.y"
+#line 1026 "parser.y"
     {
       fprintf(logfile,"At line no: %d statement : expression_statement\n\n",line);
 			fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
       (yyvsp[0].symbol)->setname((yyvsp[0].symbol)->get_name()+"\n");
 			(yyval.symbol)=(yyvsp[0].symbol);
     }
-#line 2462 "y.tab.c"
+#line 2455 "y.tab.c"
     break;
 
   case 34: /* statement: compound_statement  */
-#line 1040 "parser.y"
+#line 1033 "parser.y"
     {
       fprintf(logfile,"At line no: %d statement : compound_statement\n\n",line);
       fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
 
       (yyval.symbol)=(yyvsp[0].symbol);
     }
-#line 2473 "y.tab.c"
+#line 2466 "y.tab.c"
     break;
 
   case 35: /* statement: FOR LPAREN expression_statement expression_statement expression RPAREN statement  */
-#line 1047 "parser.y"
+#line 1040 "parser.y"
     {
       string l1=newLabel();
       string l2=newLabel();
@@ -2500,11 +2493,11 @@ yyreduce:
       fprintf(logfile,"line no. %d: statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n",line);
 			fprintf(logfile,"%s\n\n",str.c_str());
     }
-#line 2504 "y.tab.c"
+#line 2497 "y.tab.c"
     break;
 
   case 36: /* statement: IF LPAREN expression RPAREN statement  */
-#line 1074 "parser.y"
+#line 1067 "parser.y"
     {
       string str = "if("+(yyvsp[-2].symbol)->get_name()+")"+(yyvsp[0].symbol)->get_name();
       fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement\n\n",line);
@@ -2527,11 +2520,11 @@ yyreduce:
 			//$$->set_code(assembly_codes);
 
     }
-#line 2531 "y.tab.c"
+#line 2524 "y.tab.c"
     break;
 
   case 37: /* statement: IF LPAREN expression RPAREN statement ELSE statement  */
-#line 1097 "parser.y"
+#line 1090 "parser.y"
     {
       string str = "if("+(yyvsp[-4].symbol)->get_name()+")"+(yyvsp[-2].symbol)->get_name()+"else"+(yyvsp[0].symbol)->get_name();
       //$$ = new SymbolInfo(str , "statement");
@@ -2560,11 +2553,11 @@ yyreduce:
 			//$$->set_code(assembly_codes);
 
     }
-#line 2564 "y.tab.c"
+#line 2557 "y.tab.c"
     break;
 
   case 38: /* statement: WHILE LPAREN expression RPAREN statement  */
-#line 1126 "parser.y"
+#line 1119 "parser.y"
     {
       string str = "while("+(yyvsp[-2].symbol)->get_name()+")"+(yyvsp[0].symbol)->get_name();
       //$$ = new SymbolInfo(str , "statement");
@@ -2592,11 +2585,11 @@ yyreduce:
 			(yyval.symbol)->set_code(assembly_codes);
 
     }
-#line 2596 "y.tab.c"
+#line 2589 "y.tab.c"
     break;
 
   case 39: /* statement: PRINTLN LPAREN ID RPAREN SEMICOLON  */
-#line 1154 "parser.y"
+#line 1147 "parser.y"
     {
       //$$ = new SymbolInfo("printf("+$3->get_name()+");" , "statement");
       fprintf(logfile,"Line %d: statement : PRINTLN LPAREN ID RPAREN SEMICOLON\n\n",line);
@@ -2624,11 +2617,11 @@ yyreduce:
 
 
     }
-#line 2628 "y.tab.c"
+#line 2621 "y.tab.c"
     break;
 
   case 40: /* statement: RETURN expression SEMICOLON  */
-#line 1182 "parser.y"
+#line 1175 "parser.y"
     {
       fprintf(logfile,"Line %d: statement : RETURN expression SEMICOLON\n\n",line);
       fprintf(logfile , "return %s;\n\n" , (yyvsp[-1].symbol)->get_name().c_str());
@@ -2636,40 +2629,40 @@ yyreduce:
 			assembly_codes=(yyvsp[-1].symbol)->get_code();///will have to chk ig
 			(yyval.symbol)->set_code(assembly_codes);
     }
-#line 2640 "y.tab.c"
+#line 2633 "y.tab.c"
     break;
 
   case 41: /* expression_statement: SEMICOLON  */
-#line 1192 "parser.y"
+#line 1185 "parser.y"
     {
       (yyval.symbol)=new SymbolInfo("SEMICOLON","SEMICOLON");
       fprintf(logfile,"Line %d: expression_statement : SEMICOLON\n",line);
 			fprintf(logfile,";\n\n");
     }
-#line 2650 "y.tab.c"
+#line 2643 "y.tab.c"
     break;
 
   case 42: /* expression_statement: expression SEMICOLON  */
-#line 1198 "parser.y"
+#line 1191 "parser.y"
     {
       (yyval.symbol) = (yyvsp[-1].symbol);
       fprintf(logfile,"Line %d: expression_statement : expression SEMICOLON\n\n",line);
       fprintf(logfile , "%s;\n\n" , (yyvsp[-1].symbol)->get_name().c_str());
     }
-#line 2660 "y.tab.c"
+#line 2653 "y.tab.c"
     break;
 
   case 43: /* expression_statement: expression error  */
-#line 1204 "parser.y"
+#line 1197 "parser.y"
    {
      //error_cnt++;
      yyclearin;
    }
-#line 2669 "y.tab.c"
+#line 2662 "y.tab.c"
     break;
 
   case 44: /* variable: ID  */
-#line 1213 "parser.y"
+#line 1206 "parser.y"
     {
       fprintf(logfile,"Line %d: variable : ID\n",line);
       fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
@@ -2685,11 +2678,11 @@ yyreduce:
       (yyval.symbol)->asmName=(yyval.symbol)->get_name()+table.get_current_id()[0];
 
     }
-#line 2689 "y.tab.c"
+#line 2682 "y.tab.c"
     break;
 
   case 45: /* variable: ID LTHIRD expression RTHIRD  */
-#line 1230 "parser.y"
+#line 1223 "parser.y"
    {
      fprintf(logfile,"At line no: %d variable : ID LTHIRD expression RTHIRD\n",line);
 		 fprintf(logfile,"%s[%s]\n\n",(yyvsp[-3].symbol)->get_name().c_str(),(yyvsp[-1].symbol)->get_name().c_str());
@@ -2703,21 +2696,21 @@ yyreduce:
      (yyval.symbol)->asmName=(yyval.symbol)->get_name()+table.get_current_id()[0];
 
    }
-#line 2707 "y.tab.c"
+#line 2700 "y.tab.c"
     break;
 
   case 46: /* expression: logic_expression  */
-#line 1247 "parser.y"
+#line 1240 "parser.y"
     {
       (yyval.symbol) = (yyvsp[0].symbol);
       fprintf(logfile,"Line %d: expression : logic_expression\n\n",line);
 			fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
     }
-#line 2717 "y.tab.c"
+#line 2710 "y.tab.c"
     break;
 
   case 47: /* expression: variable ASSIGNOP logic_expression  */
-#line 1253 "parser.y"
+#line 1246 "parser.y"
     {
       (yyval.symbol) = new SymbolInfo((yyvsp[-2].symbol)->get_name()+"="+(yyvsp[0].symbol)->get_name() , "expression");
       fprintf(logfile,"Line %d: expression : variable ASSIGNOP logic_expression\n\n",line);
@@ -2832,22 +2825,22 @@ yyreduce:
 			}
 			//$$->set_code(assembly_codes);
     }
-#line 2836 "y.tab.c"
+#line 2829 "y.tab.c"
     break;
 
   case 48: /* logic_expression: rel_expression  */
-#line 1370 "parser.y"
+#line 1363 "parser.y"
     {
       (yyval.symbol) = (yyvsp[0].symbol);
       (yyval.symbol)->setVariableType("int");
       fprintf(logfile,"Line %d: logic_expression : rel_expression\n\n",line);
       fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
     }
-#line 2847 "y.tab.c"
+#line 2840 "y.tab.c"
     break;
 
   case 49: /* logic_expression: rel_expression LOGICOP rel_expression  */
-#line 1377 "parser.y"
+#line 1370 "parser.y"
     {
       (yyval.symbol) = (yyvsp[-2].symbol);
       fprintf(logfile,"At line no: %d logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
@@ -2916,22 +2909,22 @@ yyreduce:
 			//-----------------------------------------------------------------------------
 
     }
-#line 2920 "y.tab.c"
+#line 2913 "y.tab.c"
     break;
 
   case 50: /* rel_expression: simple_expression  */
-#line 1448 "parser.y"
+#line 1441 "parser.y"
    {
      (yyval.symbol) = (yyvsp[0].symbol);
      fprintf(logfile,"Line %d: rel_expression	: simple_expression\n\n",line);
      fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
      (yyval.symbol)->setVariableType("int");
    }
-#line 2931 "y.tab.c"
+#line 2924 "y.tab.c"
     break;
 
   case 51: /* rel_expression: simple_expression RELOP simple_expression  */
-#line 1455 "parser.y"
+#line 1448 "parser.y"
    {
      (yyval.symbol) = (yyvsp[-2].symbol);
      fprintf(logfile,"Line %d: rel_expression : simple_expression RELOP simple_expression\n\n",line);
@@ -2998,22 +2991,22 @@ yyreduce:
 
       //----------------------------------------------------------------------
    }
-#line 3002 "y.tab.c"
+#line 2995 "y.tab.c"
     break;
 
   case 52: /* simple_expression: term  */
-#line 1524 "parser.y"
+#line 1517 "parser.y"
   {
     (yyval.symbol) = (yyvsp[0].symbol);
     fprintf(logfile,"Line %d: simple_expression : term\n\n",line);
     fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
 
   }
-#line 3013 "y.tab.c"
+#line 3006 "y.tab.c"
     break;
 
   case 53: /* simple_expression: simple_expression ADDOP term  */
-#line 1531 "parser.y"
+#line 1524 "parser.y"
   {
     (yyval.symbol) = (yyvsp[-2].symbol);
     fprintf(logfile,"Line %d: simple_expression : simple_expression ADDOP term\n\n",line);
@@ -3050,21 +3043,21 @@ yyreduce:
   			(yyval.symbol)->asmName=temp;
 
   }
-#line 3054 "y.tab.c"
+#line 3047 "y.tab.c"
     break;
 
   case 54: /* term: unary_expression  */
-#line 1570 "parser.y"
+#line 1563 "parser.y"
     {
       (yyval.symbol) = (yyvsp[0].symbol);
       fprintf(logfile,"Line %d: term :	unary_expression\n\n",line);
       fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
     }
-#line 3064 "y.tab.c"
+#line 3057 "y.tab.c"
     break;
 
   case 55: /* term: term MULOP unary_expression  */
-#line 1576 "parser.y"
+#line 1569 "parser.y"
     {
       (yyval.symbol)=(yyvsp[-2].symbol);
       fprintf(logfile,"Line %d: term : term MULOP unary_expression\n\n",line);
@@ -3139,11 +3132,11 @@ yyreduce:
 			}
 
     }
-#line 3143 "y.tab.c"
+#line 3136 "y.tab.c"
     break;
 
   case 56: /* unary_expression: ADDOP unary_expression  */
-#line 1653 "parser.y"
+#line 1646 "parser.y"
     {
       //if $3 is void type function
       string fn = modified_name_while_func_calling((yyvsp[0].symbol)->get_name());
@@ -3188,11 +3181,11 @@ yyreduce:
 			(yyval.symbol)->asmName=temp;
       //------------------------------------------------------------------------------------
     }
-#line 3192 "y.tab.c"
+#line 3185 "y.tab.c"
     break;
 
   case 57: /* unary_expression: NOT unary_expression  */
-#line 1698 "parser.y"
+#line 1691 "parser.y"
     {
       (yyval.symbol)=(yyvsp[0].symbol);
 			string temp=newTemp();
@@ -3206,21 +3199,21 @@ yyreduce:
 			(yyval.symbol)->setname(temp);
 			(yyval.symbol)->asmName=temp;
     }
-#line 3210 "y.tab.c"
+#line 3203 "y.tab.c"
     break;
 
   case 58: /* unary_expression: factor  */
-#line 1712 "parser.y"
+#line 1705 "parser.y"
      {
        (yyval.symbol) = (yyvsp[0].symbol);
        fprintf(logfile,"Line %d: unary_expression :	factor\n\n",line);
        fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
      }
-#line 3220 "y.tab.c"
+#line 3213 "y.tab.c"
     break;
 
   case 59: /* factor: variable  */
-#line 1720 "parser.y"
+#line 1713 "parser.y"
     {
       (yyval.symbol) = (yyvsp[0].symbol);
       fprintf(logfile,"Line %d: factor : variable\n\n",line);
@@ -3273,11 +3266,11 @@ yyreduce:
       }
 
     }
-#line 3277 "y.tab.c"
+#line 3270 "y.tab.c"
     break;
 
   case 60: /* factor: ID LPAREN argument_list RPAREN  */
-#line 1773 "parser.y"
+#line 1766 "parser.y"
     {
       (yyval.symbol) = new SymbolInfo((yyvsp[-3].symbol)->get_name() + "(" + (yyvsp[-1].symbol)->get_name() + ")" , "factor");
       (yyval.symbol)->set_is_func(true);
@@ -3341,11 +3334,11 @@ yyreduce:
       }
 
     }
-#line 3345 "y.tab.c"
+#line 3338 "y.tab.c"
     break;
 
   case 61: /* factor: LPAREN expression RPAREN  */
-#line 1837 "parser.y"
+#line 1830 "parser.y"
     {
       (yyval.symbol) =(yyvsp[-1].symbol);
       (yyval.symbol)->asmName=(yyval.symbol)->get_name();
@@ -3355,11 +3348,11 @@ yyreduce:
       fprintf(logfile,"(%s)\n\n",(yyvsp[-1].symbol)->get_name().c_str());
 
     }
-#line 3359 "y.tab.c"
+#line 3352 "y.tab.c"
     break;
 
   case 62: /* factor: CONST_INT  */
-#line 1847 "parser.y"
+#line 1840 "parser.y"
     {
       (yyval.symbol)=(yyvsp[0].symbol);
 			(yyval.symbol)->asmName=(yyval.symbol)->get_name();
@@ -3369,11 +3362,11 @@ yyreduce:
 			fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
 
     }
-#line 3373 "y.tab.c"
+#line 3366 "y.tab.c"
     break;
 
   case 63: /* factor: CONST_FLOAT  */
-#line 1857 "parser.y"
+#line 1850 "parser.y"
     {
       (yyval.symbol)=(yyvsp[0].symbol);
       (yyval.symbol)->asmName=(yyval.symbol)->get_name();
@@ -3383,11 +3376,11 @@ yyreduce:
       fprintf(logfile,"%s\n\n",(yyvsp[0].symbol)->get_name().c_str());
 
     }
-#line 3387 "y.tab.c"
+#line 3380 "y.tab.c"
     break;
 
   case 64: /* factor: variable INCOP  */
-#line 1867 "parser.y"
+#line 1860 "parser.y"
     {
       (yyval.symbol)=new SymbolInfo((yyvsp[-1].symbol)->get_name(),(yyvsp[-1].symbol)->get_type());
 
@@ -3426,11 +3419,11 @@ yyreduce:
       }
 
     }
-#line 3430 "y.tab.c"
+#line 3423 "y.tab.c"
     break;
 
   case 65: /* factor: variable DECOP  */
-#line 1906 "parser.y"
+#line 1899 "parser.y"
     {
       (yyval.symbol) = new SymbolInfo((yyvsp[-1].symbol)->get_name(),(yyvsp[-1].symbol)->get_type());
 
@@ -3467,27 +3460,27 @@ yyreduce:
         (yyval.symbol)->setIdentity((yyvsp[-1].symbol)->getIdentity());
       }
     }
-#line 3471 "y.tab.c"
+#line 3464 "y.tab.c"
     break;
 
   case 66: /* argument_list: arguments  */
-#line 1945 "parser.y"
+#line 1938 "parser.y"
         {
     			(yyval.symbol)=(yyvsp[0].symbol);
         }
-#line 3479 "y.tab.c"
+#line 3472 "y.tab.c"
     break;
 
   case 67: /* argument_list: %empty  */
-#line 1949 "parser.y"
+#line 1942 "parser.y"
         {
           (yyval.symbol) = new SymbolInfo("" , "argument_list");
         }
-#line 3487 "y.tab.c"
+#line 3480 "y.tab.c"
     break;
 
   case 68: /* arguments: arguments COMMA logic_expression  */
-#line 1955 "parser.y"
+#line 1948 "parser.y"
         {
           (yyval.symbol) = new SymbolInfo((yyvsp[-2].symbol)->get_name()+" , "+(yyvsp[0].symbol)->get_name() , "arguments");
 
@@ -3508,11 +3501,11 @@ yyreduce:
           }
 
         }
-#line 3512 "y.tab.c"
+#line 3505 "y.tab.c"
     break;
 
   case 69: /* arguments: logic_expression  */
-#line 1976 "parser.y"
+#line 1969 "parser.y"
         {
           ////fprintf(logfile,"At line no: %d arguments : logic_expression\n\n",line);
     			//fprintf(logfile,"%s\n\n",$1->get_name().c_str());
@@ -3531,11 +3524,11 @@ yyreduce:
             (yyval.symbol)->push_in_arg((yyvsp[0].symbol)->get_name() , (yyvsp[0].symbol)->getVariableType() , 0);
           }
         }
-#line 3535 "y.tab.c"
+#line 3528 "y.tab.c"
     break;
 
 
-#line 3539 "y.tab.c"
+#line 3532 "y.tab.c"
 
       default: break;
     }
@@ -3729,7 +3722,7 @@ yyreturn:
   return yyresult;
 }
 
-#line 1998 "parser.y"
+#line 1991 "parser.y"
 
 int main(int argc,char *argv[])
 {
