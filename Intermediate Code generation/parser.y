@@ -285,24 +285,6 @@ string modify_proc(string fnm , string proc_code)
   return new_proc_code;
 }
 
-string assembly_procs="";
-
-string newLabel()
-{
-	string temp="L"+to_str(labelCount);
-	labelCount++;
-	return temp;
-}
-
-string newTemp()
-{
-	string temp="T"+to_str(tempCount);
-	tempCount++;
-
-	variableListForInit.push_back({temp,"0"});
-	return temp;
-}
-
 ///return true for cases:
 ///s1 := MOV AX, a1
 ///s2 := MOV a1, AX
@@ -341,6 +323,103 @@ bool check_if_equivalent_command(string s1 , string s2)
   if(src1==dest2 and src2==dest1)return true;
   else return false;
 }
+
+
+string modify_proc_for_stack(string fnm , string s){
+  function_ f = get_func(fnm);
+  if(f.params.size()==0)return s;
+
+  stringstream ss(s);
+  string line;
+  string func="";
+  vector<string>v;
+  while(getline(ss,line,'\n')){
+      //cout << line <<endl;
+      v.push_back(line);
+  }
+  int sz = v.size();
+
+    for(int i=0;i<sz;i++){
+      if(v[i]=="\tPUSH DX"){
+        if(f.params.size()==1){
+          v[i]+="\n\tPUSH a1";
+          break;
+        }
+        else if(f.params.size()==2){
+          v[i]+="\n\tPUSH b1\n\tPUSH a1";
+          break;
+        }
+      }
+    }
+
+
+  for(int i=0;i<sz-1;i++){
+    ///for 1st parameter a1
+    if(v[i]=="\tMOV AX, a1"){
+      if(check_if_equivalent_command(v[i] , v[i+1])){
+        v[i+1]=" ";
+      }
+      v[i] = "\tPOP AX\n\tMOV DX, AX";
+    }
+    if(v[i]=="\tMOV BX, a1"){
+      if(check_if_equivalent_command(v[i] , v[i+1])){
+        v[i+1]=" ";
+      }
+      v[i] = "\tPOP BX";
+    }
+    ///for 2nd parameter b1
+    if(v[i]=="\tMOV AX, b1"){
+      if(check_if_equivalent_command(v[i] , v[i+1])){
+        v[i+1]=" ";
+      }
+      v[i] = "\tPOP AX";
+    }
+    if(v[i]=="\tMOV BX, b1"){
+      if(check_if_equivalent_command(v[i] , v[i+1])){
+        v[i+1]=" ";
+      }
+      v[i] = "\tPOP BX";
+    }
+    ///other operation except MOV
+    if(v[i]=="\tADD AX, b1"){
+      v[i] = "\tPOP BX\n\tADD AX, BX";
+    }
+    if(v[i]=="\tADD AX, a1"){
+      v[i] = "\tADD AX, DX";
+    }
+    if(v[i]=="\tSUB AX, b1"){
+      v[i] = "\tPOP BX\n\tSUB AX, BX";
+    }
+    if(v[i]=="\tMUL AX, b1"){
+      v[i] = "\tPOP BX\n\tMUL AX, BX";
+    }
+
+  }
+
+  for(int i=0;i<sz;i++){
+    func+=(v[i]+"\n");
+  }
+  return func;
+}
+
+string assembly_procs="";
+
+string newLabel()
+{
+	string temp="L"+to_str(labelCount);
+	labelCount++;
+	return temp;
+}
+
+string newTemp()
+{
+	string temp="T"+to_str(tempCount);
+	tempCount++;
+
+	variableListForInit.push_back({temp,"0"});
+	return temp;
+}
+
 
 void optimize_code(FILE *basecode){
    optimized_asmCode=fopen("optimized_code.asm","w");
@@ -614,7 +693,9 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       $$ = new SymbolInfo($1->get_name()+" "+$2->get_name()+"("+$4->get_name()+")"+$7->get_name()+"\n\n", "NON_TERMINAL");
       $$->set_code(assemblyCodes);
 
-      if($2->get_name()!="main")assembly_procs += modify_proc($2->get_name() , assemblyCodes);
+      string str = modify_proc_for_stack($2->get_name() , assemblyCodes);
+      string final = modify_proc($2->get_name() , str);
+      if($2->get_name()!="main")assembly_procs += final;
   }
 		| type_specifier ID LPAREN RPAREN
     {
