@@ -1,15 +1,14 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
-	a1 DW ?
-	b1 DW ?
-	c1 DW 3 DUP(?)
 	T1 DW ?
+	x1 DW ?
 	T2 DW ?
 	T3 DW ?
-	T4 DW ?
-	T5 DW ?
+	a1 DW ?
+	b1 DW ?
 .CODE
+;------printing procedure----
 PRINT_ID PROC
 
 	;SAVE IN STACK
@@ -70,6 +69,55 @@ PRINT_ID PROC
 	RET
 PRINT_ID ENDP
 
+f PROC
+
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH a1
+
+	MOV AX, 2
+	POP BX
+	MUL BX
+	MOV T1, AX
+
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+RET
+f ENDP
+
+g PROC
+
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH b1
+	PUSH a1
+ 
+	POP AX
+	MOV DX, AX
+ 
+	CALL f
+
+	MOV AX, T1
+	ADD AX, DX
+	MOV T2, AX
+
+	MOV AX, T2
+	POP BX
+	ADD AX, BX
+	MOV T3, AX
+ 	POP DX
+	POP CX
+	POP BX
+	POP AX
+RET
+g ENDP
+
 MAIN PROC
 
 	;INITIALIZE DATA SEGMENT
@@ -77,78 +125,26 @@ MAIN PROC
 	MOV DS, AX
 
  
-	MOV AX, 2
-	ADD AX, 3
-	MOV T1, AX
-
 	MOV AX, 1
-	MOV BX, T1
-	MUL BX
-	MOV T2, AX
+	MOV a1, AX
+ 
+	MOV AX, 2
+	MOV b1, AX
+ 
+	MOV AX, a1
+	MOV a1, AX
 
-	MOV AX, T2
-	MOV BX, 3
-	XOR DX, DX
-	DIV BX
-	MOV T3 , DX
+	MOV AX, b1
+	MOV b1, AX
+	CALL g
 
 	MOV AX, T3
 	MOV a1, AX
- 
-	MOV AX, 1
-	CMP AX, 5
-	JL L1
+ ;--------print function called---------
 
-	MOV T4, 0
-	JMP L2
-
-	L1:
-	MOV T4, 1
-
-	L2:
-
-	MOV AX, T4
-	MOV b1, AX
- 
-	MOV AX, 2
-	MOV c1, AX
- 
-	MOV AX, T5
-	MOV BX, b1
-	CMP AX, 1
-	JNE L3
-	CMP BX, 1
-	JNE L3
-	MOV AX, 1
-	MOV T5, AX
-	JMP L4
-
-	L3:
-	MOV AX, 0
-	MOV T5, AX
-
-	L4:
-;--------if else block---------
-	MOV AX, T5
-	CMP AX, 0
-	JE L5
-	MOV AX, c1
-	INC AX
-	MOV c1, AX
-	JMP L6
-	L5:
-
-	MOV AX, c1
-	MOV c1+1*2, AX
-
-	L6:
- 
 	MOV AX, a1
 	CALL PRINT_ID
  
-	MOV AX, b1
-	CALL PRINT_ID
-
 	MOV AX, 4CH
 	INT 21H
 MAIN ENDP

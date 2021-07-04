@@ -56,13 +56,21 @@ class SymbolInfo{
     bool is_declared_func;// to keep track of declared function and verify if they are defined later
     bool is_func;//to chk (at time of function calling) if $$ is really a function(see 2nd rule of factor)
     string code;
+    string assembly_value;
     SymbolInfo* next;
 public:
     vector<parameter>param;
     vector<variable>var;
     vector<arg_>arg_list;
-    string asmName;
     int idx;
+
+    void set_assembly_value(string s){
+      assembly_value = s;
+    }
+
+    string get_assembly_value(){
+      return assembly_value;
+    }
 
     void set_code(string code_){
       code = code_;
@@ -194,7 +202,7 @@ public:
     }
 
     ///setters
-    void setname(string nm){
+    void set_name(string nm){
         name = nm;
     }
 

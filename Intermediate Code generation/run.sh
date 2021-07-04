@@ -11,4 +11,4 @@ g++ -w -c -o l.o lex.yy.c
 echo 'Generated the scanner object file'
 g++ y.o l.o -ll
 echo 'All ready, running'
-./a.out input.c code.asm optimized_code.asm
+./a.out input.c
