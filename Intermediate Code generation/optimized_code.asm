@@ -1,12 +1,14 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
+	i1 DW ?
+	j1 DW ?
+	k1 DW ?
 	T1 DW ?
-	x1 DW ?
 	T2 DW ?
 	T3 DW ?
-	a1 DW ?
-	b1 DW ?
+	T4 DW ?
+	T5 DW ?
 .CODE
 ;------printing procedure----
 PRINT_ID PROC
@@ -69,55 +71,6 @@ PRINT_ID PROC
 	RET
 PRINT_ID ENDP
 
-f PROC
-
-	PUSH AX
-	PUSH BX
-	PUSH CX
-	PUSH DX
-	PUSH a1
-
-	MOV AX, 2
-	POP BX
-	MUL BX
-	MOV T1, AX
-
-	POP DX
-	POP CX
-	POP BX
-	POP AX
-RET
-f ENDP
-
-g PROC
-
-	PUSH AX
-	PUSH BX
-	PUSH CX
-	PUSH DX
-	PUSH b1
-	PUSH a1
- 
-	POP AX
-	MOV DX, AX
- 
-	CALL f
-
-	MOV AX, T1
-	ADD AX, DX
-	MOV T2, AX
-
-	MOV AX, T2
-	POP BX
-	ADD AX, BX
-	MOV T3, AX
- 	POP DX
-	POP CX
-	POP BX
-	POP AX
-RET
-g ENDP
-
 MAIN PROC
 
 	;INITIALIZE DATA SEGMENT
@@ -125,23 +78,141 @@ MAIN PROC
 	MOV DS, AX
 
  
-	MOV AX, 1
-	MOV a1, AX
+	MOV AX, 3
+	MOV i1, AX
  
-	MOV AX, 2
-	MOV b1, AX
+	MOV AX, 8
+	MOV j1, AX
  
-	MOV AX, a1
+	MOV AX, 6
+	MOV k1, AX
+ 
+	MOV AX, i1
+	CMP AX, 3
+	JE Label1
 
-	MOV AX, b1
-	CALL g
+	MOV T1, 0
+	JMP Label2
 
+	Label1:
+	MOV T1, 1
+
+	Label2:
+;--------if block---------
+	MOV AX, T1
+	CMP AX, 0
+	JE Label3
+;--------print function called---------
+
+	MOV AX, j1
+	CALL PRINT_ID
+	Label3:
+ 
+	MOV AX, j1
+	CMP AX, 8
+	JL Label4
+
+	MOV T2, 0
+	JMP Label5
+
+	Label4:
+	MOV T2, 1
+
+	Label5:
+;--------if else block---------
+	MOV AX, T2
+	CMP AX, 0
+	JE Label6
+;--------print function called---------
+
+	MOV AX, i1
+	CALL PRINT_ID
+	JMP Label7
+	Label6:
+;--------print function called---------
+
+	MOV AX, k1
+	CALL PRINT_ID
+
+	Label7:
+ 
+	MOV AX, k1
+	CMP AX, 6
+	JNE Label8
+
+	MOV T3, 0
+	JMP Label9
+
+	Label8:
+	MOV T3, 1
+
+	Label9:
+;--------if else block---------
 	MOV AX, T3
-	MOV a1, AX
+	CMP AX, 0
+	JE Label18
+;--------print function called---------
+
+	MOV AX, k1
+	CALL PRINT_ID
+	JMP Label19
+	Label18:
+
+	MOV AX, j1
+	CMP AX, 8
+	JG Label10
+
+	MOV T4, 0
+	JMP Label11
+
+	Label10:
+	MOV T4, 1
+
+	Label11:
+;--------if else block---------
+	MOV AX, T4
+	CMP AX, 0
+	JE Label16
+;--------print function called---------
+
+	MOV AX, j1
+	CALL PRINT_ID
+	JMP Label17
+	Label16:
+
+	MOV AX, i1
+	CMP AX, 5
+	JL Label12
+
+	MOV T5, 0
+	JMP Label13
+
+	Label12:
+	MOV T5, 1
+
+	Label13:
+;--------if else block---------
+	MOV AX, T5
+	CMP AX, 0
+	JE Label14
+;--------print function called---------
+
+	MOV AX, i1
+	CALL PRINT_ID
+	JMP Label15
+	Label14:
+
+	MOV AX, 0
+	MOV k1, AX
  ;--------print function called---------
 
-	MOV AX, a1
 	CALL PRINT_ID
+
+	Label15:
+
+	Label17:
+
+	Label19:
  
 	MOV AX, 4CH
 	INT 21H

@@ -28,7 +28,7 @@ extern int error_cnt;
 FILE *fp,*asmCode,*optimized_asmCode;
 FILE *errorfile = fopen("error.txt","w");
 FILE *logfile = fopen("log.txt" , "w");
-
+FILE *asm2 = fopen("asm_v2.txt" , "w");
 SymbolTable table(30);
 vector<pair<string,string>> variableList_to_be_Initialized;
 string assembly_codes;
@@ -273,6 +273,7 @@ string modify_proc(string fnm , string proc_code)
   string ret_reg = "T" + to_string(f.return_reg_no);
   int start_idx = get_first_index(proc_code , "MOV "+ret_reg+", AX");
   int end_idx = get_last_Index(proc_code , "POP DX");
+  if(start_idx==0)return proc_code;//no return statement
   string new_proc_code="";
   for(int i=0;i<proc_code.length();i++){
     if(i<=start_idx || i>=end_idx-2){
@@ -403,7 +404,7 @@ string assembly_procs="";
 
 string newLabel()
 {
-	string temp="L"+to_string(labelcnt);
+	string temp="Label"+to_string(labelcnt);
 	labelcnt++;
 	return temp;
 }
@@ -417,6 +418,60 @@ string newTemp()
 	return temp;
 }
 
+string remove_unused_label(string s){
+
+    istringstream origStream(s);
+
+    vector<string>lbl_list;
+    string curLine;
+    while (getline(origStream, curLine))
+    {
+        if (!curLine.empty() and curLine.size()>0 and curLine[1]=='L' and curLine[2]=='a' and curLine[3]=='b' and curLine[4]=='e'){
+          lbl_list.push_back(curLine);
+          //cout<<curLine<<endl;
+        }
+    }
+
+    bool got=false;
+    string newval="";
+    istringstream origStream2(s);
+    while(getline(origStream2, curLine))
+    {
+        if (!curLine.empty() and curLine.size()>0 and curLine[1]=='J'){
+          istringstream lbl(curLine);
+          vector<string> tokens{istream_iterator<string>{lbl},
+                      istream_iterator<string>{}};
+          string l_nm = tokens[1];
+
+          for(int i=0;i<lbl_list.size();i++){
+            if(lbl_list[i]=="\t"+l_nm+":"){
+              got = true;break;
+            }
+          }
+          if(got){
+            newval+=(curLine+"\n");
+          }
+          if(l_nm=="PRINT_NUMBER")newval+=(curLine+"\n");
+          got = false;
+        }
+        else {
+          newval+=(curLine+"\n");
+        }
+    }
+    return newval;
+
+}
+
+bool doesnt_affect(string s1 , string s2){
+  if(s2.size()<=1)return true;
+  else if(s2[0]==';' or s2[1]==';')return true;
+  else if(s2[1]=='I' and s2[2]=='N' and s2[3]=='C')return false;
+  else if(s2[1]=='D' and s2[2]=='E' and s2[3]=='C')return false;
+
+
+  else return false;
+
+}
 
 void optimize_code(FILE *basecode){
    optimized_asmCode=fopen("optimized_code.asm","w");
@@ -433,10 +488,24 @@ void optimize_code(FILE *basecode){
      to_be_removed[i] = 0;
    }
 
-   for(int i=0;i<sz-1;i++){
+   for(int i=0;i<sz-3;i++){
      if(check_if_equivalent_command(v[i] ,v[i+1])){
        to_be_removed[i+1] = 1;
      }
+     else if (doesnt_affect(v[i] , v[i+1])){
+
+
+       if(check_if_equivalent_command(v[i] ,v[i+2])){
+         to_be_removed[i+2] = 1;
+       }
+       else if(check_if_equivalent_command(v[i] ,v[i+3])){
+         to_be_removed[i+3] = 1;
+       }
+     }
+
+
+
+
    }
 
    for(int i=0;i<sz;i++){
@@ -478,10 +547,17 @@ start : program
     //$$->set_code(assembly_codes);
     if(error_cnt==0){
         string starting=".MODEL SMALL\n.STACK 100H\n.DATA\n";
-
+        map<string, int>alreay_declared;
+        for(int i=0;i<variableList_to_be_Initialized.size();i++){
+          alreay_declared[variableList_to_be_Initialized[i].first]=0;
+        }
 		 		for(int i=0;i<variableList_to_be_Initialized.size();i++){
-		 			if(variableList_to_be_Initialized[i].second=="0")
-		 				starting+=("\t"+variableList_to_be_Initialized[i].first+" DW ?\n");
+          if(alreay_declared[variableList_to_be_Initialized[i].first]>0)continue;
+		 			if(variableList_to_be_Initialized[i].second=="0"){
+            starting+=("\t"+variableList_to_be_Initialized[i].first+" DW ?\n");
+            alreay_declared[variableList_to_be_Initialized[i].first]++;
+          }
+
 		 			else
 		 				starting+=("\t"+variableList_to_be_Initialized[i].first+" DW "+variableList_to_be_Initialized[i].second+" DUP(?)\n");
 		 		}
@@ -490,9 +566,13 @@ start : program
         ///adding print function
 		 		string print_func = print_function();
         starting+=print_func;
-        starting+=assembly_procs;
 
-		 		fprintf(asmCode,"%s",starting.c_str());
+        starting+=assembly_procs;
+        //cout<<remove_unused_label(starting)<<endl;
+
+        starting = remove_unused_label(starting);
+        fprintf(asm2 , "%s",starting.c_str());
+        fprintf(asmCode,"%s",starting.c_str());
 		 		fprintf(asmCode,"%s",$$->get_code().c_str());
         fclose(asmCode);
         ///write optimized code
@@ -738,7 +818,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 				assembly_codes+=("RET\n");
 				assembly_codes+=($2->get_name()+" ENDP\n\n");
 			}
-
+      //cout<<modify_proc($2->get_name() , assembly_codes)<<endl;
       if($2->get_name()=="main")$$->set_code(assembly_codes);
       if($2->get_name()!="main")assembly_procs += modify_proc($2->get_name() , assembly_codes);
 	}
@@ -1003,7 +1083,7 @@ statement : var_declaration
 
       $$ = $3;
 
-      $$->add_code(";-------for loop starts--------\n");
+      $$->add_code(";-------for loop starts--------\n\t");
 			$$->add_code(l1+":\n");
 
 			$$->add_code($4->get_code());
@@ -1028,12 +1108,12 @@ statement : var_declaration
       fprintf(logfile,"At line no: %d statement : IF LPAREN expression RPAREN statement\n\n",line);
       fprintf(logfile,"%s\n\n",str.c_str());
       $$=$3;
-      $$->set_name(str);
+      //$$->set_name(str);
       $$->settype("if");
 
 			string label=newLabel();
 
-      $$->add_code(";--------if else block---------\n");
+      $$->add_code(";--------if block---------\n");
 			$$->add_code("\tMOV AX, "+$3->get_name()+"\n");
 
 			$$->add_code("\tCMP AX, 0\n");
@@ -1075,7 +1155,7 @@ statement : var_declaration
       $$=new SymbolInfo("while","loop");
 
 			string l1=newLabel(), l2=newLabel();
-      assembly_codes=(";--------while loop---------\n");
+      assembly_codes=(";--------while loop---------\n\t");
 			assembly_codes+=(l1+":\n");
 
 			assembly_codes+=$3->get_code();
@@ -1104,6 +1184,7 @@ statement : var_declaration
 			assembly_codes+=("\tCALL PRINT_ID\n");
 			$$->set_code(assembly_codes);
 
+
       if($3->get_is_func()){
         if(!table.Lookup_in_current(modified_name_while_func_calling($3->get_name()))){
           error_cnt++;
@@ -1111,8 +1192,7 @@ statement : var_declaration
           fprintf(logfile , "Error at line: %d Undeclared function %s\n\n" , line,modified_name_while_func_calling($3->get_name()).c_str());
         }
       }
-
-      else if(!table.Lookup_in_current($3->get_name())){
+      else if(!table.Lookup($3->get_name())){
         error_cnt++;
         fprintf(errorfile , "Error at line: %d Undeclared Variable %s\n\n" , line,$3->get_name().c_str());
         fprintf(logfile , "Error at line: %d Undeclared Variable %s\n\n" , line,$3->get_name().c_str());
@@ -1163,7 +1243,7 @@ variable :
       $$->push_in_var($1->get_name(),"",0);
       SymbolInfo *x=table.Lookup($1->get_name());
       if(x)$$->setVariableType(x->getVariableType());
-
+      //cout<<$$->get_name()<<endl;
       $$->set_assembly_value($$->get_name()+table.get_current_id()[0]);
 
     }
@@ -1332,9 +1412,8 @@ logic_expression : rel_expression
 			string temp=newTemp();
 			string l1=newLabel();
 			string l2=newLabel();
-      $$->set_name(temp);
-			$$->set_assembly_value(temp);
 
+      //cout<<$1->get_assembly_value()<<endl;
 			$$->add_code("\n\tMOV AX, "+$1->get_assembly_value()+"\n");
 			$$->add_code("\tMOV BX, "+$3->get_assembly_value()+"\n");
 
@@ -1373,7 +1452,8 @@ logic_expression : rel_expression
 
 				$$->add_code("\n\t"+l2+":\n");
 			}
-
+      $$->set_name(temp);
+			$$->set_assembly_value(temp);
     }
 		 ;
 
@@ -1383,6 +1463,7 @@ rel_expression	: simple_expression
      fprintf(logfile,"Line %d: rel_expression	: simple_expression\n\n",line);
      fprintf(logfile,"%s\n\n",$1->get_name().c_str());
      $$->setVariableType("int");
+     //cout<<$$->get_assembly_value()<<endl;
    }
 		| simple_expression RELOP simple_expression
    {
@@ -1625,6 +1706,7 @@ factor	: variable
         else $$->set_assembly_value(modified_name($$->get_name()) +table.get_current_id()[0]+"+"+to_string(idx)+"*2");
       }
       else{
+        //cout<<modified_name($$->get_name()) +table.get_current_id()[0]<<endl;
         $$->set_assembly_value (modified_name($$->get_name()) +table.get_current_id()[0]);
       }
 
