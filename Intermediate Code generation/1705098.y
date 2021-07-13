@@ -28,7 +28,7 @@ extern int error_cnt;
 FILE *fp,*asmCode,*optimized_asmCode;
 FILE *errorfile = fopen("error.txt","w");
 FILE *logfile = fopen("log.txt" , "w");
-FILE *asm2 = fopen("asm_v2.txt" , "w");
+
 SymbolTable table(30);
 vector<pair<string,string>> variableList_to_be_Initialized;
 string assembly_codes;
@@ -322,84 +322,6 @@ bool check_if_equivalent_command(string s1 , string s2)
   else return false;
 }
 
-
-string modify_proc_for_stack(string fnm , string s){
-  function_ f = get_func(fnm);
-  if(f.params.size()==0)return s;
-
-  stringstream ss(s);
-  string line;
-  string func="";
-  vector<string>v;
-  while(getline(ss,line,'\n')){
-      //cout << line <<endl;
-      v.push_back(line);
-  }
-  int sz = v.size();
-
-    for(int i=0;i<sz;i++){
-      if(v[i]=="\tPUSH DX"){
-        if(f.params.size()==1){
-          v[i]+="\n\tPUSH a1";
-          break;
-        }
-        else if(f.params.size()==2){
-          v[i]+="\n\tPUSH b1\n\tPUSH a1";
-          break;
-        }
-      }
-    }
-
-
-  for(int i=0;i<sz-1;i++){
-    ///for 1st parameter a1
-    if(v[i]=="\tMOV AX, a1"){
-      if(check_if_equivalent_command(v[i] , v[i+1])){
-        v[i+1]=" ";
-      }
-      v[i] = "\tPOP AX\n\tMOV DX, AX";
-    }
-    if(v[i]=="\tMOV BX, a1"){
-      if(check_if_equivalent_command(v[i] , v[i+1])){
-        v[i+1]=" ";
-      }
-      v[i] = "\tPOP BX";
-    }
-    ///for 2nd parameter b1
-    if(v[i]=="\tMOV AX, b1"){
-      if(check_if_equivalent_command(v[i] , v[i+1])){
-        v[i+1]=" ";
-      }
-      v[i] = "\tPOP AX";
-    }
-    if(v[i]=="\tMOV BX, b1"){
-      if(check_if_equivalent_command(v[i] , v[i+1])){
-        v[i+1]=" ";
-      }
-      v[i] = "\tPOP BX";
-    }
-    ///other operation except MOV
-    if(v[i]=="\tADD AX, b1"){
-      v[i] = "\tPOP BX\n\tADD AX, BX";
-    }
-    if(v[i]=="\tADD AX, a1"){
-      v[i] = "\tADD AX, DX";
-    }
-    if(v[i]=="\tSUB AX, b1"){
-      v[i] = "\tPOP BX\n\tSUB AX, BX";
-    }
-    if(v[i]=="\tMUL AX, b1"){
-      v[i] = "\tPOP BX\n\tMUL AX, BX";
-    }
-
-  }
-
-  for(int i=0;i<sz;i++){
-    func+=(v[i]+"\n");
-  }
-  return func;
-}
-
 string assembly_procs="";
 
 string newLabel()
@@ -503,9 +425,6 @@ void optimize_code(FILE *basecode){
        }
      }
 
-
-
-
    }
 
    for(int i=0;i<sz;i++){
@@ -571,7 +490,6 @@ start : program
         //cout<<remove_unused_label(starting)<<endl;
 
         starting = remove_unused_label(starting);
-        fprintf(asm2 , "%s",starting.c_str());
         fprintf(asmCode,"%s",starting.c_str());
 		 		fprintf(asmCode,"%s",$$->get_code().c_str());
         fclose(asmCode);
@@ -740,6 +658,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
       fprintf(logfile , "Line %d: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n" , line);
       fprintf(logfile , "%s %s(%s)%s\n\n" , $1->get_name().c_str(),$2->get_name().c_str(),$4->get_name().c_str(),$7->get_name().c_str());
 
+      function_ f = get_func($2->get_name());
+      //cout<<$2->get_name()<<" "<<f.return_reg_no<<endl;
       if($2->get_name()=="main"){
         assembly_codes="MAIN PROC\n\n";
       }
@@ -764,9 +684,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN
 				assembly_codes+=("RET\n");
 				assembly_codes+=($2->get_name()+" ENDP\n\n");
 			}
-
-      string str = modify_proc_for_stack($2->get_name() , assembly_codes);
-      string final = modify_proc($2->get_name() , str);
+      string final = modify_proc($2->get_name() , assembly_codes);
       if($2->get_name()!="main")assembly_procs += final;
   }
 		| type_specifier ID LPAREN RPAREN
